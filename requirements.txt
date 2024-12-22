@@ -2,3 +2,6 @@ huggingface_hub
 ipywidgets
 kaggle
 transformers
+torch
+unidecode
+spacy
