@@ -1,41 +1,47 @@
 import spacy
 
 # Load spaCy English model
-nlp = spacy.load("en_core_web_sm")
+nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 
-def preprocess_article(text):
+def preprocess_articles(texts, batch_size=32, n_process=-1):
     """
-    Preprocess a given text: tokenize, remove stopwords, and lemmatize.
+    Optimizes the preprocessing of multiple articles using nlp.pipe.
+
     Args:
-        text (str): Input text to preprocess.
+        texts (List[str]): List of text documents to preprocess.
+        batch_size (int): Batch size for parallel processing.
+        n_process (int): Number of processes for parallel execution.
+
     Returns:
-        str: Preprocessed text as a single string of tokens.
+        List[str]: A list of cleaned articles (lemmatized, no stopwords/punct/spaces).
     """
-    # Apply spaCy model to the text
-    doc = nlp(text)
-
-    # Tokenize, remove stopwords, and lemmatize
-    tokens = [
-        token.lemma_
-        for token in doc
-        if not token.is_stop and not token.is_punct and not token.is_space
-    ]
-
-    # Join tokens into a single string
-    return " ".join(tokens)
+    cleaned_texts = []
+    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+        tokens = [
+            token.lemma_
+            for token in doc
+            if not token.is_stop and not token.is_punct and not token.is_space
+        ]
+        cleaned_texts.append(" ".join(tokens))
+    return cleaned_texts
 
 
-def preprocess_summary(text):
+def preprocess_summaries(texts, batch_size=32, n_process=-1):
     """
-    Preprocess a summary: minimal preprocessing (lowercase, add special tokens).
+    Performs minimal preprocessing for summaries (lowercasing + tokens + <START>/<END>),
+    also leveraging nlp.pipe for parallel processing.
+
     Args:
-        text (str): Input summary text.
+        texts (List[str]): List of summary texts.
+        batch_size (int): Batch size for parallel processing.
+        n_process (int): Number of processes for parallel execution.
+
     Returns:
-        str: Preprocessed summary text with <START> and <END>.
+        List[str]: A list of preprocessed summaries.
     """
-    # Tokenize and lowercase
-    doc = nlp(text)
-    tokens = [token.text.lower() for token in doc if not token.is_space]
-    # Add special tokens
-    return "<START> " + " ".join(tokens) + " <END>"
+    cleaned_summaries = []
+    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+        tokens = [token.text.lower() for token in doc if not token.is_space]
+        cleaned_summaries.append("<START> " + " ".join(tokens) + " <END>")
+    return cleaned_summaries
