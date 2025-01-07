@@ -5,10 +5,11 @@ import spacy
 # Load spaCy English model
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
+
 def plot_text_length_distribution(df, column_name):
     """
     Plots a histogram of text lengths from the specified column in the given DataFrame.
-    
+
     Parameters
     ----------
     df : pd.DataFrame
@@ -16,25 +17,15 @@ def plot_text_length_distribution(df, column_name):
     column_name : str
         The name of the column to analyze.
     """
-    # Check if the column exists in the DataFrame
-    if column_name not in df.columns:
-        raise ValueError(f"Column '{column_name}' does not exist in the DataFrame.")
-
     # Calculate the length (number of characters) of each text entry in the column
     text_lengths = df[column_name].astype(str).str.len()
-    
+
     # Create the figure
     plt.figure(figsize=(10, 6))
-    
+
     # Plot the histogram
-    plt.hist(
-        text_lengths,
-        bins=50,
-        edgecolor="black",
-        alpha=0.7,
-        color="blue"
-    )
-    
+    plt.hist(text_lengths, bins=50, edgecolor="black", alpha=0.7, color="blue")
+
     # Calculate and plot the mean
     mean_val = text_lengths.mean()
     plt.axvline(
@@ -42,22 +33,21 @@ def plot_text_length_distribution(df, column_name):
         color="red",
         linestyle="--",
         linewidth=2,
-        label=f"Mean: {mean_val:.2f}"
+        label=f"Mean: {mean_val:.2f}",
     )
-    
+
     # Configure labels, legend, and grid
     plt.xlabel(f"Length of '{column_name}' (characters)", fontsize=14)
     plt.ylabel("Frequency", fontsize=14)
     plt.legend(fontsize=12)
     plt.grid(axis="y", linestyle="--", alpha=0.7)
-    
+
     # Display the plot
     plt.show()
 
+
 def preprocess_articles(texts, batch_size=32, n_process=-1):
     """
-    Optimizes the preprocessing of multiple articles using nlp.pipe.
-
     Args:
         texts (List[str]): List of text documents to preprocess.
         batch_size (int): Batch size for parallel processing.
@@ -67,9 +57,11 @@ def preprocess_articles(texts, batch_size=32, n_process=-1):
         List[str]: A list of cleaned articles (lemmatized, no stopwords/punct/spaces).
     """
     cleaned_texts = []
-    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+
+    for text in texts:
+        doc = nlp(text)
         tokens = [
-            token.lemma_
+            token.lemma_.lower()
             for token in doc
             if not token.is_stop and not token.is_punct and not token.is_space
         ]
@@ -79,8 +71,7 @@ def preprocess_articles(texts, batch_size=32, n_process=-1):
 
 def preprocess_summaries(texts, batch_size=32, n_process=-1):
     """
-    Performs minimal preprocessing for summaries (lowercasing + tokens),
-    also leveraging nlp.pipe for parallel processing.
+    Performs minimal preprocessing for summaries (lowercasing + tokens).
 
     Args:
         texts (List[str]): List of summary texts.
@@ -91,6 +82,9 @@ def preprocess_summaries(texts, batch_size=32, n_process=-1):
         List[str]: A list of preprocessed summaries.
     """
     cleaned_summaries = []
-    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+
+    for text in texts:
+        doc = nlp(text)
         tokens = [token.text.lower() for token in doc if not token.is_space]
+        cleaned_summaries.append(" ".join(tokens))
     return cleaned_summaries
