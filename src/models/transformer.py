@@ -2,6 +2,12 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
+device = (
+    "cuda"
+    if torch.cuda.is_available()
+    else "mps" if torch.backends.mps.is_available() else "cpu"
+)
+
 
 class AttentionLayer(nn.Module):
     """
