@@ -1,4 +1,4 @@
-from transformers import BertModel, BertConfig
+from transformers import BertModel
 from torch import nn
 
 
