@@ -46,7 +46,7 @@ def plot_text_length_distribution(df, column_name):
     plt.show()
 
 
-def preprocess_articles(texts, batch_size=32, n_process=-1):
+def preprocess_articles(texts, n_process, batch_size=32):
     """
     Args:
         texts (List[str]): List of text documents to preprocess.
@@ -57,9 +57,7 @@ def preprocess_articles(texts, batch_size=32, n_process=-1):
         List[str]: A list of cleaned articles (lemmatized, no stopwords/punct/spaces).
     """
     cleaned_texts = []
-
-    for text in texts:
-        doc = nlp(text)
+    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
         tokens = [
             token.lemma_.lower()
             for token in doc
@@ -69,7 +67,7 @@ def preprocess_articles(texts, batch_size=32, n_process=-1):
     return cleaned_texts
 
 
-def preprocess_summaries(texts, batch_size=32, n_process=-1):
+def preprocess_summaries(texts, n_process, batch_size=32):
     """
     Performs minimal preprocessing for summaries (lowercasing + tokens).
 
@@ -82,9 +80,7 @@ def preprocess_summaries(texts, batch_size=32, n_process=-1):
         List[str]: A list of preprocessed summaries.
     """
     cleaned_summaries = []
-
-    for text in texts:
-        doc = nlp(text)
+    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
         tokens = [token.text.lower() for token in doc if not token.is_space]
         cleaned_summaries.append(" ".join(tokens))
     return cleaned_summaries
