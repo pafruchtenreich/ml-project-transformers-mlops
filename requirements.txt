@@ -6,3 +6,4 @@ unidecode
 spacy
 parquet
 evaluate
+rouge_score
