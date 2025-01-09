@@ -98,7 +98,7 @@ class Encoder(nn.Module):
         # - input_size=embed_dim
         # - output_size can be anything, but we won't really use it in the encoder
         #   so let's set output_size=hidden_size (or 1 if we truly don’t care).
-        self.rnn_cell = MultiLayerVanillaRNN(
+        self.rnn_cell = RNN(
             input_size=embed_dim,
             hidden_size=hidden_size,
             num_layers=num_layers,
@@ -163,7 +163,7 @@ class Decoder(nn.Module):
         # Our custom multi-layer RNN cell
         # - input_size=embed_dim
         # - output_size=vocab_size (since we want logits over the summary vocabulary)
-        self.rnn_cell = MultiLayerVanillaRNN(
+        self.rnn_cell = RNN(
             input_size=embed_dim,
             hidden_size=hidden_size,
             num_layers=num_layers,
