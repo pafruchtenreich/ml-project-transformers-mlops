@@ -10,20 +10,15 @@ device = (
 
 
 class AttentionLayer(nn.Module):
-    """
-    Multi-head attention mechanism class.
-
-    This layer computes attention scores between query (q), key (k), and value (v) tensors,
-    then applies a linear projection to the output.
-    """
+    """Multi-head attention layer."""
 
     def __init__(self, hidden_size, n_head):
         """
         Initialize the AttentionLayer.
 
         Args:
-            hidden_size (int): The dimensionality of the hidden representations.
-            n_head (int): The number of attention heads.
+            hidden_size (int): Dimension of the hidden state.
+            n_head (int): Number of attention heads.
         """
         super(AttentionLayer, self).__init__()
         self.hidden_size = hidden_size
@@ -35,67 +30,60 @@ class AttentionLayer(nn.Module):
 
     def forward(self, q, k, v, mask=None):
         """
-        Forward pass for the multi-head attention layer.
+        Forward pass for attention.
 
         Args:
-            q (torch.Tensor): Query tensor of shape (batch_size, seq_len, hidden_size).
-            k (torch.Tensor): Key tensor of shape (batch_size, seq_len, hidden_size).
-            v (torch.Tensor): Value tensor of shape (batch_size, seq_len, hidden_size).
-            mask (torch.Tensor, optional): Attention mask to prevent attention to certain positions.
+            q (Tensor): Query tensor.
+            k (Tensor): Key tensor.
+            v (Tensor): Value tensor.
+            mask (Tensor, optional): Attention mask.
 
         Returns:
-            torch.Tensor: The output of the attention layer of shape (batch_size, seq_len, hidden_size).
+            Tensor: Output after attention.
         """
         batch_size, length, _ = q.shape
         # apply projections
         q, k, v = self.w_q(q), self.w_k(v), self.w_v(v)
 
+        # split heads
+        # dims: (N,h,L,d)
         d_head = self.hidden_size // self.n_head
-        # reshape into (batch_size, n_head, seq_len, d_head)
         q = q.view(batch_size, length, self.n_head, d_head).transpose(1, 2)
-        k = k.view(batch_size, length, self.n_head, d_head).transpose(1, 2)
-        v = v.view(batch_size, length, self.n_head, d_head).transpose(1, 2)
+        k = k.view(batch_size, k.shape[1], self.n_head, d_head).transpose(1, 2)
+        v = v.view(batch_size, v.shape[1], self.n_head, d_head).transpose(1, 2)
 
-        # compute attention scores
+        # calculating attention
         kt = k.transpose(2, 3)
-        y = q @ kt
-        y = y * ((d_head) ** -0.5)  # scale by sqrt(d_head)
 
-        # apply mask if provided
+        # (N,h,L,d)@(N,h,d,L)->(N,h,L,L)
+        y = q @ kt
+        y = y * ((d_head) ** (-0.5))
         if mask is not None:
             y = y - 10000 * (mask == 0)
-
-        # softmax over the last dimension
         y = F.softmax(y, dim=-1)
 
-        # multiply by values
+        # (N,h,L,L)@(N,h,L,d)->(N,h,L,d)
         y = y @ v
 
-        # restore shape
-        y = y.transpose(1, 2).contiguous()
+        # reconcatenating heads
+        y = y.transpose(1, 2).contiguous()  # (N,L,h,d)
         y = y.view(batch_size, length, self.hidden_size)
-
-        # final linear projection
         y = self.w_o(y)
         return y
 
 
 class EncoderLayer(nn.Module):
-    """
-    A single Transformer encoder layer.
-
-    This layer includes multi-head self-attention and a feedforward network.
-    """
+    """Transformer encoder layer."""
 
     def __init__(self, hidden_size, ffn_hidden, n_head, drop_prob):
         """
-        Initialize an EncoderLayer.
+        Initialize the EncoderLayer.
 
         Args:
-            hidden_size (int): The dimensionality of the hidden representations.
-            ffn_hidden (int): The hidden size of the feed-forward network.
-            n_head (int): The number of attention heads.
-            drop_prob (float): Probability of dropout.
+            hidden_size (int): Dimension of the hidden state.
+            ffn_hidden (int): Dimension of the feed-forward network.
+            n_head (int): Number of attention heads.
+            drop_prob (float): Dropout probability.
         """
         super(EncoderLayer, self).__init__()
         self.attention = AttentionLayer(hidden_size=hidden_size, n_head=n_head)
@@ -114,45 +102,43 @@ class EncoderLayer(nn.Module):
         Forward pass for the encoder layer.
 
         Args:
-            x (torch.Tensor): Input tensor of shape (batch_size, seq_len, hidden_size).
-            src_mask (torch.Tensor): Attention mask for the source sequence.
+            x (Tensor): Input tensor.
+            src_mask (Tensor): Source mask.
 
         Returns:
-            torch.Tensor: Output of the encoder layer of shape (batch_size, seq_len, hidden_size).
+            Tensor: Output tensor.
         """
-        # Self-attention
+        # 1. compute self attention
         _x = x
         x = self.attention(q=x, k=x, v=x, mask=src_mask)
+
         x = self.dropout1(x)
         x = self.norm1(x + _x)
 
-        # Feed-forward network
+        # 2. feed forward network
         _x = x
         x = self.linear1(x)
         x = F.relu(x)
         x = self.dropout2(x)
         x = self.linear2(x)
+
         x = self.dropout3(x)
         x = self.norm2(x + _x)
         return x
 
 
 class DecoderLayer(nn.Module):
-    """
-    A single Transformer decoder layer.
-
-    This layer includes self-attention, encoder-decoder attention, and a feedforward network.
-    """
+    """Transformer decoder layer."""
 
     def __init__(self, hidden_size, ffn_hidden, n_head, drop_prob):
         """
-        Initialize a DecoderLayer.
+        Initialize the DecoderLayer.
 
         Args:
-            hidden_size (int): The dimensionality of the hidden representations.
-            ffn_hidden (int): The hidden size of the feed-forward network.
-            n_head (int): The number of attention heads.
-            drop_prob (float): Probability of dropout.
+            hidden_size (int): Dimension of the hidden state.
+            ffn_hidden (int): Dimension of the feed-forward network.
+            n_head (int): Number of attention heads.
+            drop_prob (float): Dropout probability.
         """
         super(DecoderLayer, self).__init__()
         self.self_attention = AttentionLayer(hidden_size=hidden_size, n_head=n_head)
@@ -175,59 +161,56 @@ class DecoderLayer(nn.Module):
         Forward pass for the decoder layer.
 
         Args:
-            dec (torch.Tensor): Decoder input tensor of shape (batch_size, seq_len, hidden_size).
-            enc (torch.Tensor): Encoder output tensor of shape (batch_size, seq_len, hidden_size).
-            trg_mask (torch.Tensor): Attention mask for the target sequence.
-            src_mask (torch.Tensor): Attention mask for the source sequence.
+            dec (Tensor): Decoder input tensor.
+            enc (Tensor): Encoder output tensor.
+            trg_mask (Tensor): Target mask.
+            src_mask (Tensor): Source mask.
 
         Returns:
-            torch.Tensor: Output of the decoder layer of shape (batch_size, seq_len, hidden_size).
+            Tensor: Output tensor.
         """
-        # Self-attention (decoder)
+        # 1. compute self attention
         _x = dec
         x = self.self_attention(q=dec, k=dec, v=dec, mask=trg_mask)
+
         x = self.dropout1(x)
         x = self.norm1(x + _x)
-
-        # Encoder-decoder attention
         if enc is not None:
+            # 2. compute encoder - decoder attention
             _x = x
             x = self.enc_dec_attention(q=x, k=enc, v=enc, mask=src_mask)
+            # 4. add and norm
             x = self.dropout2(x)
             x = self.norm2(x + _x)
 
-        # Feed-forward network
+        # 3. simple feed forward network
         _x = x
         x = self.linear1(x)
         x = F.relu(x)
         x = self.dropout3(x)
         x = self.linear2(x)
+
         x = self.dropout4(x)
         x = self.norm3(x + _x)
         return x
 
 
 class PositionalEncoding(nn.Module):
-    """
-    Positional encoding for Transformer models.
-
-    This module computes sine and cosine positional embeddings for each position
-    in the sequence, which are then added to token embeddings.
-    """
+    """Positional encoding module."""
 
     def __init__(self, hidden_size, max_len):
         """
-        Initialize PositionalEncoding.
+        Initialize the PositionalEncoding.
 
         Args:
-            hidden_size (int): The dimensionality of the hidden representations.
-            max_len (int): Maximum length of the input sequence.
+            hidden_size (int): Dimension of the hidden state.
+            max_len (int): Maximum sequence length.
         """
         super(PositionalEncoding, self).__init__()
-        # 'device' should be defined outside or passed in; assuming it is defined globally
         self.encoding = torch.zeros(max_len, hidden_size, device=device)
         self.encoding.requires_grad = False
-        pos = torch.arange(0, max_len, device=device).float().unsqueeze(dim=1)
+        pos = torch.arange(0, max_len, device=device)
+        pos = pos.float().unsqueeze(dim=1)
         _2i = torch.arange(0, hidden_size, step=2, device=device).float()
         self.encoding[:, 0::2] = torch.sin(pos / (10000 ** (_2i / hidden_size)))
         self.encoding[:, 1::2] = torch.cos(pos / (10000 ** (_2i / hidden_size)))
@@ -237,30 +220,27 @@ class PositionalEncoding(nn.Module):
         Forward pass for positional encoding.
 
         Args:
-            x (torch.Tensor): A tensor indicating the sequence input shape,
-                              usually (batch_size, seq_len).
+            x (Tensor): Input tensor.
 
         Returns:
-            torch.Tensor: The positional encoding of shape (seq_len, hidden_size).
+            Tensor: Positional encoded tensor.
         """
         batch_size, seq_len = x.size()
         return self.encoding[:seq_len, :]
 
 
 class TransformerEmbedding(nn.Module):
-    """
-    Embedding module that combines token embeddings with positional encodings.
-    """
+    """Embedding layer with positional encoding for Transformer."""
 
     def __init__(self, vocab_size, hidden_size, max_len, drop_prob):
         """
-        Initialize TransformerEmbedding.
+        Initialize the TransformerEmbedding.
 
         Args:
             vocab_size (int): Size of the vocabulary.
-            hidden_size (int): The dimensionality of the hidden representations.
-            max_len (int): Maximum length of the input sequence.
-            drop_prob (float): Probability of dropout.
+            hidden_size (int): Dimension of the embeddings.
+            max_len (int): Maximum sequence length.
+            drop_prob (float): Dropout probability.
         """
         super(TransformerEmbedding, self).__init__()
         self.tok_emb = nn.Embedding(vocab_size, hidden_size, padding_idx=1)
@@ -269,13 +249,13 @@ class TransformerEmbedding(nn.Module):
 
     def forward(self, x):
         """
-        Forward pass to generate combined embeddings.
+        Forward pass for embedding.
 
         Args:
-            x (torch.Tensor): Input token IDs of shape (batch_size, seq_len).
+            x (Tensor): Input tensor of token indices.
 
         Returns:
-            torch.Tensor: Token embedding plus positional encoding, of shape (batch_size, seq_len, hidden_size).
+            Tensor: Embedded tensor with positional encoding.
         """
         tok_emb = self.tok_emb(x)
         pos_emb = self.pos_emb(x)
@@ -283,12 +263,7 @@ class TransformerEmbedding(nn.Module):
 
 
 class Transformer(nn.Module):
-    """
-    A Transformer model consisting of an encoder and a decoder.
-
-    This model handles source and target inputs, applies attention, and outputs
-    logits over the vocabulary for each position in the target sequence.
-    """
+    """Transformer model consisting of encoder and decoder."""
 
     def __init__(
         self,
@@ -306,24 +281,32 @@ class Transformer(nn.Module):
         Initialize the Transformer.
 
         Args:
-            pad_idx (int): The padding token index.
-            voc_size (int): The size of the vocabulary.
-            hidden_size (int): The dimensionality of the hidden representations.
-            n_head (int): The number of attention heads.
-            max_len (int): Maximum length for the encoder.
-            dec_max_len (int): Maximum length for the decoder (unused in this shared embedding example).
-            ffn_hidden (int): Hidden size in the feed-forward networks.
+            pad_idx (int): Padding index.
+            voc_size (int): Vocabulary size.
+            hidden_size (int): Dimension of the hidden state.
+            n_head (int): Number of attention heads.
+            max_len (int): Maximum source sequence length.
+            dec_max_len (int): Maximum target sequence length.
+            ffn_hidden (int): Dimension of the feed-forward network.
             n_layers (int): Number of encoder and decoder layers.
-            drop_prob (float): Probability of dropout.
+            drop_prob (float, optional): Dropout probability. Defaults to 0.1.
         """
         super().__init__()
         self.pad_idx = pad_idx
-        self.embedding = TransformerEmbedding(
+        self.enc_embedding = TransformerEmbedding(
             hidden_size=hidden_size,
             max_len=max_len,
             vocab_size=voc_size,
             drop_prob=drop_prob,
         )
+
+        self.dec_embedding = TransformerEmbedding(
+            hidden_size=hidden_size,
+            max_len=dec_max_len,
+            vocab_size=voc_size,
+            drop_prob=drop_prob,
+        )
+
         self.encoder_layers = nn.ModuleList(
             [
                 EncoderLayer(
@@ -335,6 +318,7 @@ class Transformer(nn.Module):
                 for _ in range(n_layers)
             ]
         )
+
         self.decoder_layers = nn.ModuleList(
             [
                 DecoderLayer(
@@ -346,6 +330,7 @@ class Transformer(nn.Module):
                 for _ in range(n_layers)
             ]
         )
+
         self.linear = nn.Linear(hidden_size, voc_size)
 
     def forward(self, src, trg):
@@ -353,50 +338,47 @@ class Transformer(nn.Module):
         Forward pass for the Transformer.
 
         Args:
-            src (torch.Tensor): Source token IDs of shape (batch_size, src_seq_len).
-            trg (torch.Tensor): Target token IDs of shape (batch_size, trg_seq_len).
+            src (Tensor): Source input tensor.
+            trg (Tensor): Target input tensor.
 
         Returns:
-            torch.Tensor: Logits over the vocabulary for each position in the target sequence,
-                          of shape (batch_size, trg_seq_len, voc_size).
+            Tensor: Output logits.
         """
         src_mask = self.make_src_mask(src)
         trg_mask = self.make_trg_mask(trg)
 
-        enc_src = self.embedding(src)
+        enc_src = self.enc_embedding(src)
         for layer in self.encoder_layers:
             enc_src = layer(enc_src, src_mask)
 
-        out = self.embedding(trg)
+        out = self.dec_embedding(trg)
         for layer in self.decoder_layers:
             out = layer(out, enc_src, trg_mask, src_mask)
-
         out = self.linear(out)
         return out
 
     def make_src_mask(self, src):
         """
-        Create a masking tensor for the source sequence to avoid attending to padding tokens.
+        Create source mask.
 
         Args:
-            src (torch.Tensor): Source token IDs of shape (batch_size, src_seq_len).
+            src (Tensor): Source input tensor.
 
         Returns:
-            torch.Tensor: A mask of shape (batch_size, 1, 1, src_seq_len).
+            Tensor: Source mask.
         """
         src_mask = (src != self.pad_idx).unsqueeze(1).unsqueeze(2)
         return src_mask
 
     def make_trg_mask(self, trg):
         """
-        Create a masking tensor for the target sequence to avoid attending to padding tokens
-        and to maintain auto-regressive property (no access to future tokens).
+        Create target mask.
 
         Args:
-            trg (torch.Tensor): Target token IDs of shape (batch_size, trg_seq_len).
+            trg (Tensor): Target input tensor.
 
         Returns:
-            torch.Tensor: A mask of shape (batch_size, 1, trg_seq_len, trg_seq_len).
+            Tensor: Target mask.
         """
         trg_pad_mask = (trg != self.pad_idx).unsqueeze(1).unsqueeze(3)
         trg_len = trg.shape[1]
