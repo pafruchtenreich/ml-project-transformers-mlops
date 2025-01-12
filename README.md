@@ -10,10 +10,6 @@ This project explores Transformer-based models inspired by the paper [*Attention
 
 ## Results and Experiments
 
-- **Metrics**: ROUGE-1, ROUGE-2, ROUGE-L, BLEU  
-- **Training Cost**: Time per epoch, GPU usage, model parameters  
-- **Performance**: Evaluate generated summaries against ground truth
-
 | Model                        | ROUGE-1 | ROUGE-2 | ROUGE-L | Train Time (ep)  | Params  |
 |------------------------------|---------|---------|---------|------------------|---------|
 | RNN Encoder-Decoder          | ...     | ...     | ...     | ~ $7.7 \times 10^4$ s (25) | $1.19 \times 10^7$  |
