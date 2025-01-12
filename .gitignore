@@ -4,3 +4,4 @@ news-summarization/
 *.zip
 *.parquet
 *.pt
+*.json
