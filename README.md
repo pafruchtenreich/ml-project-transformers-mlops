@@ -14,8 +14,11 @@ The models were trained on an NVIDIA A100 GPU with 40 GB of high-bandwidth memor
 
 | Model                        | ROUGE-1 | ROUGE-2 | ROUGE-L | Train Time (ep)  | Params  |
 |------------------------------|---------|---------|---------|------------------|---------|
-| RNN Encoder-Decoder          | ...     | ...     | ...     | ~ $7.5 \times 10^4$ s (25) | $1.19 \times 10^7$  |
-| Transformer                  | ...     | ...     | ...     | ~ $1.6 \times 10^4$ s (25) | $1.25 \times 10^7$  |
-| BERT                         | ...     | ...     | ...     | ~ $7.7 \times 10^4$ s (7) | $1.33 \times 10^8$  |
+| RNN Encoder-Decoder          | 0.08    | 0.00    | 0.08    | ~ $7.5 \times 10^4$ s (25) | $1.19 \times 10^7$  |
+| Transformer                  | 0.20    | 0.04    | 0.15    | ~ $1.6 \times 10^4$ s (25) | $1.25 \times 10^7$  |
+| BERT                         | 0.13    | 0.01    | 0.10    | ~ $7.7 \times 10^4$ s (7) | $1.33 \times 10^8$  |
+
+
+
 
 
