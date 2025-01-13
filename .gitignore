@@ -2,6 +2,6 @@
 __pycache__/
 news-summarization/
 *.zip
-*.parquet
 *.pt
 *.json
+*.parquet
