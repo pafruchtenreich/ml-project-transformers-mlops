@@ -7,3 +7,4 @@ spacy
 parquet
 evaluate
 rouge_score
+pre-commit
