@@ -1,8 +1,5 @@
 import time
 import torch
-from torch.utils.data import DataLoader
-import torch.nn as nn
-from transformers import BertTokenizer
 from tqdm import tqdm
 
 
@@ -12,6 +9,7 @@ def train_model(
     num_epochs,
     optimizer,
     loss_fn,
+    # obsolete
     model_name,
     device,
     teacher_forcing_ratio=None,
@@ -25,7 +23,6 @@ def train_model(
     - num_epochs (int): Number of epochs to train for.
     - optimizer (torch.optim.Optimizer): Optimizer for training.
     - loss_fn (torch.nn.Module): Loss function.
-    - model_name (str): Name of the model for saving checkpoints.
     - device (torch.device): Device to train on (CPU or GPU).
     - teacher_forcing_ratio (float or None): Ratio for teacher forcing (only for Seq2Seq).
 
@@ -51,29 +48,11 @@ def train_model(
             optimizer.zero_grad()
 
             # Forward pass
-            if model_name == "Seq2Seq":
-                outputs = model(
-                    input_batch.long(),
-                    summary_batch,
-                    teacher_forcing_ratio=teacher_forcing_ratio,
-                )
-                shifted_target = summary_batch[:, 1:]  # Shift target for loss
-                loss = loss_fn(
-                    outputs.reshape(-1, outputs.shape[-1]), shifted_target.reshape(-1)
-                )
-
-            elif model_name == "Transformer":
-                outputs = model(input_batch.long(), summary_batch[:, :-1])
-                shifted_target = summary_batch[:, 1:]  # Shift target for loss
-                loss = loss_fn(
-                    outputs.reshape(-1, outputs.shape[-1]), shifted_target.reshape(-1)
-                )
-
-            elif model_name == "BERT":
-                outputs = model(input_batch, attention_mask=input_batch.ne(0))
-                loss = loss_fn(
-                    outputs.view(-1, outputs.shape[-1]), summary_batch.view(-1)
-                )
+            outputs = model(input_batch.long(), summary_batch[:, :-1])
+            shifted_target = summary_batch[:, 1:]  # Shift target for loss
+            loss = loss_fn(
+                outputs.reshape(-1, outputs.shape[-1]), shifted_target.reshape(-1)
+            )
 
             total_loss += loss.item()
 
