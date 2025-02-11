@@ -8,3 +8,8 @@ parquet
 evaluate
 rouge_score
 pre-commit
+numpy
+pandas
+ruff>=0.7.1
+pre-commit
+pytest
