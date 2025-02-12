@@ -13,6 +13,9 @@ def setup_logger():
     Returns:
     -logger (logging.Logger): A configured logger instance
     """
+    # check if the logger is already set up, if so return it, else set it up
+    if len(logging.getLogger().handlers) > 0:
+        return logging.getLogger(__name__)
 
     # Generate a timestamped log filename
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
