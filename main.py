@@ -28,6 +28,10 @@ from src.features.functions_preprocessing import (
 from src.features.tokenization import parallel_tokenize
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
+from src.setup_logger import setup_logger
+
+# Initialize logger
+logger = setup_logger()
 
 device = (
     "cuda"
@@ -36,7 +40,7 @@ device = (
     if torch.backends.mps.is_available()
     else "cpu"
 )
-print(f"Using {device} device")
+logger.info(f"Using {device} device")
 
 
 def get_allowed_cpu_count():
@@ -48,11 +52,12 @@ def get_allowed_cpu_count():
 
 
 cpu_count = get_allowed_cpu_count()
-print(cpu_count)
+logger.info(f"Using {cpu_count} CPUs")
 
 n_process = max(1, cpu_count // 2)
 
 torch.set_num_threads(n_process)
+logger.info(f"torch set up to use {n_process} processes")
 
 """
 Kaggle dataset
@@ -67,13 +72,13 @@ with zipfile.ZipFile("news-summarization.zip", "r") as zip_ref:
 
 news_data = pd.read_csv("news-summarization/data.csv")
 
-print(news_data.head())
+# print(news_data.head())
 
 N = random.randint(1, len(news_data))
 
-print(news_data["Content"][N])
-print()
-print(news_data["Summary"][N])
+# print(news_data["Content"][N])
+# print()
+# print(news_data["Summary"][N])
 
 
 lengths_article = news_data["Content"].str.len()
@@ -98,7 +103,7 @@ news_data["Summary"].str.len().describe()
 
 plot_text_length_distribution(news_data, "Summary")
 
-print(len(news_data))
+# print(len(news_data))
 
 news_data.loc[:, "Content"] = preprocess_articles(
     news_data["Content"].tolist(), n_process=n_process, batch_size=32
@@ -127,12 +132,12 @@ train_size = int(train_ratio * len(data_copy))
 train_data = data_copy[:train_size]
 test_data = data_copy[train_size:]
 
-print(f"Train size: {len(train_data)}")
-print(f"Test size:  {len(test_data)}")
+logger.info(f"Train size dataset length: {len(train_data)}")
+logger.info(f"Test size dataset length: {len(test_data)}")
 
 if __name__ == "__main__":
     texts_content = list(train_data["Content"])
-    print("Tokenizing Content...")
+    # print("Tokenizing Content...")
     tokenized_articles = parallel_tokenize(
         texts_content,
         tokenizer_name="bert-base-uncased",
@@ -140,12 +145,12 @@ if __name__ == "__main__":
         chunk_size=2000,
         max_length=512,
     )
-    print("tokenized_articles.shape =", tokenized_articles.shape)
+    # print("tokenized_articles.shape =", tokenized_articles.shape)
     torch.save(tokenized_articles, "tokenized_articles.pt")
 
 if __name__ == "__main__":
     texts_summary = list(train_data["Summary"])
-    print("Tokenizing Summaries...")
+    # print("Tokenizing Summaries...")
     tokenized_summaries = parallel_tokenize(
         texts_summary,
         tokenizer_name="bert-base-uncased",
@@ -153,12 +158,12 @@ if __name__ == "__main__":
         chunk_size=2000,
         max_length=129,
     )
-    print("tokenized_summaries.shape =", tokenized_summaries.shape)
+    # print("tokenized_summaries.shape =", tokenized_summaries.shape)
     torch.save(tokenized_summaries, "tokenized_summaries.pt")
 
 if __name__ == "__main__":
     texts_content = list(test_data["Content"])
-    print("Tokenizing Content...")
+    # print("Tokenizing Content...")
     tokenized_articles_test = parallel_tokenize(
         texts_content,
         tokenizer_name="bert-base-uncased",
@@ -166,7 +171,7 @@ if __name__ == "__main__":
         chunk_size=2000,
         max_length=512,
     )
-    print("tokenized_articles.shape =", tokenized_articles_test.shape)
+    # print("tokenized_articles.shape =", tokenized_articles_test.shape)
     torch.save(tokenized_articles_test, "tokenized_articles_test.pt")
 
 with warnings.catch_warnings():
@@ -246,4 +251,4 @@ reference_summaries = list(test_data["Summary"])
 results = rouge.compute(
     predictions=predictions_transformer, references=reference_summaries
 )
-print("ROUGE metrics:", results)
+logger.info(f"ROUGE metrics: {results}")

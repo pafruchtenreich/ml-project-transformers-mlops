@@ -1,6 +1,9 @@
 import time
+
 import torch
 from tqdm import tqdm
+
+from src.setup_logger import setup_logger
 
 
 def train_model(
@@ -29,6 +32,7 @@ def train_model(
     Returns:
     - None
     """
+    logger = setup_logger()
     model.to(device)
     total_start_time = time.time()
 
@@ -63,7 +67,7 @@ def train_model(
             optimizer.step()
 
             if step % 1000 == 0:
-                print(f"Epoch: {epoch+1}, Step: {step}, Loss: {loss.item():.4f}")
+                logger.info(f"Epoch: {epoch+1}, Step: {step}, Loss: {loss.item():.4f}")
 
         # Calculate average loss for the epoch
         avg_loss = total_loss / len(dataloader)
@@ -72,7 +76,7 @@ def train_model(
         epoch_end_time = time.time()
         epoch_duration = epoch_end_time - epoch_start_time
 
-        print(
+        logger.info(
             f"Epoch {epoch+1}/{num_epochs} - "
             f"Average Loss: {avg_loss:.4f} - "
             f"Time: {epoch_duration:.2f}s"
@@ -85,4 +89,4 @@ def train_model(
     # Measure total training time
     total_end_time = time.time()
     total_training_time = total_end_time - total_start_time
-    print(f"Total training time: {total_training_time:.2f}s")
+    logger.info(f"Total training time: {total_training_time:.2f}s")
