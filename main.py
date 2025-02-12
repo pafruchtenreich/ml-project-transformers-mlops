@@ -17,7 +17,6 @@ import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertTokenizer
 
-from src import setup_logger
 from src.evaluation.model_evaluation import (
     generate_summaries_transformer,
 )
@@ -29,6 +28,7 @@ from src.features.functions_preprocessing import (
 from src.features.tokenization import parallel_tokenize
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
+from src.setup_logger import setup_logger
 
 # Initialize logger
 logger = setup_logger()
