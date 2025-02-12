@@ -5,7 +5,6 @@ Main python file
 # pip install -r requirements.txt
 # python -m spacy download en_core_web_sm
 
-import os
 import random
 import warnings
 import zipfile
@@ -28,36 +27,21 @@ from src.features.functions_preprocessing import (
 from src.features.tokenization import parallel_tokenize
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
+from src.set_up_config_device import (
+    get_allowed_cpu_count,
+    set_up_config_device,
+    set_up_device,
+)
 from src.setup_logger import setup_logger
 
 # Initialize logger
 logger = setup_logger()
 
-device = (
-    "cuda"
-    if torch.cuda.is_available()
-    else "mps"
-    if torch.backends.mps.is_available()
-    else "cpu"
-)
-logger.info(f"Using {device} device")
-
-
-def get_allowed_cpu_count():
-    # Returns the number of CPU cores available for this process.
-    try:
-        return len(os.sched_getaffinity(0))
-    except AttributeError:
-        return os.cpu_count() or 1
-
+device = set_up_device()
 
 cpu_count = get_allowed_cpu_count()
-logger.info(f"Using {cpu_count} CPUs")
 
-n_process = max(1, cpu_count // 2)
-
-torch.set_num_threads(n_process)
-logger.info(f"torch set up to use {n_process} processes")
+n_process = set_up_config_device(cpu_count)
 
 """
 Kaggle dataset
