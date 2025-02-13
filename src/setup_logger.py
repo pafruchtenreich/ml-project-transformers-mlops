@@ -19,6 +19,10 @@ def setup_logger():
 
     # Generate a timestamped log filename
     timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+
+    # check if ./logs folder has already been created, if not create it
+    if not os.path.exists("./logs"):
+        os.makedirs("./logs")
     log_file = os.path.join("./logs", f"run_{timestamp}.log")
 
     # Configure logging
