@@ -1,9 +1,44 @@
 import matplotlib.pyplot as plt
-import pandas as pd
 import spacy
+
+from src.setup_logger import setup_logger
 
 # Load spaCy English model
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+
+
+def descriptive_statistics(df, column_name):
+    """
+    Calculates and logs descriptive statistics for text length
+     in the specified column of a DataFrame.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the data.
+    column_name : str
+        The name of the column to analyze.
+    """
+    logger = setup_logger()
+
+    # Calculate text lengths
+    text_lengths = df[column_name].astype(str).str.len()
+
+    # Calculate descriptive statistics
+    desc_stats = {
+        "mean": text_lengths.mean(),
+        "median": text_lengths.median(),
+        "max": text_lengths.max(),
+        "min": text_lengths.min(),
+        "25%": text_lengths.quantile(0.25),
+        "75%": text_lengths.quantile(0.75),
+    }
+
+    # Log descriptive statistics
+    for key, value in desc_stats.items():
+        logger.info(f"{key.capitalize()}: {value}")
+
+    return desc_stats
 
 
 def plot_text_length_distribution(df, column_name):
