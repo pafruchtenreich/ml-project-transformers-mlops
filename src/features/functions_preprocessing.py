@@ -1,6 +1,7 @@
 import os
 
 import matplotlib.pyplot as plt
+import numpy as np
 import spacy
 
 from src.setup_logger import setup_logger
@@ -83,18 +84,17 @@ def plot_text_length_distribution(df, column_name):
     )
 
 
-def preprocess_articles(texts, n_process, batch_size=32):
-    """
-    Args:
-        texts (List[str]): List of text documents to preprocess.
-        batch_size (int): Batch size for parallel processing.
-        n_process (int): Number of processes for parallel execution.
+def remove_outlier(texts, lower_percent=10, upper_percent=90):
+    text_lengths = np.array([len(text) for text in texts])
+    lower_bound = np.percentile(text_lengths, lower_percent)
+    upper_bound = np.percentile(text_lengths, upper_percent)
+    return [text for text in texts if lower_bound <= len(text) <= upper_bound]
 
-    Returns:
-        List[str]: A list of cleaned articles (lemmatized, no stopwords/punct/spaces).
-    """
+
+def preprocess_articles(texts, n_process, batch_size=32):
+    filtered_texts = remove_outlier(texts)
     cleaned_texts = []
-    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+    for doc in nlp.pipe(filtered_texts, batch_size=batch_size, n_process=n_process):
         tokens = [
             token.lemma_.lower()
             for token in doc
@@ -105,19 +105,9 @@ def preprocess_articles(texts, n_process, batch_size=32):
 
 
 def preprocess_summaries(texts, n_process, batch_size=32):
-    """
-    Performs minimal preprocessing for summaries (lowercasing + tokens).
-
-    Args:
-        texts (List[str]): List of summary texts.
-        batch_size (int): Batch size for parallel processing.
-        n_process (int): Number of processes for parallel execution.
-
-    Returns:
-        List[str]: A list of preprocessed summaries.
-    """
+    filtered_texts = remove_outlier(texts)
     cleaned_summaries = []
-    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+    for doc in nlp.pipe(filtered_texts, batch_size=batch_size, n_process=n_process):
         tokens = [token.text.lower() for token in doc if not token.is_space]
         cleaned_summaries.append(" ".join(tokens))
     return cleaned_summaries

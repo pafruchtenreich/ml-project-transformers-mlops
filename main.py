@@ -54,18 +54,6 @@ descriptive_statistics(news_data, "Summary")
 plot_text_length_distribution(news_data, "Content")
 plot_text_length_distribution(news_data, "Summary")
 
-"""
-news_data = news_data[
-(lengths_article >= lengths_article.quantile(0.10))
-& (lengths_article <= lengths_article.quantile(0.90))
-]
-
-news_data = news_data[
-(lengths_summary >= lengths_summary.quantile(0.10))
-& (lengths_summary <= lengths_summary.quantile(0.90))
-]
-"""
-
 news_data.loc[:, "Content"] = preprocess_articles(
     news_data["Content"].tolist(), n_process=n_process, batch_size=32
 )
@@ -74,7 +62,6 @@ news_data.loc[:, "Summary"] = preprocess_summaries(
 )
 
 news_data.to_parquet("news_data_cleaned.parquet", index=False)
-
 news_data = pd.read_parquet("news_data_cleaned.parquet")
 
 """
