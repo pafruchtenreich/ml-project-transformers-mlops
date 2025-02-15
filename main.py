@@ -14,6 +14,7 @@ import torch
 import torch.nn as nn
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertTokenizer
+from sklearn.model_selection import train_test_split
 
 from src.evaluation.model_evaluation import (
     generate_summaries_transformer,
@@ -93,21 +94,16 @@ news_data = pd.read_parquet("news_data_cleaned.parquet")
 """
 Tokenization
 
-We shuffle the dataset, split it into training and testing sets with an 80-20 ratio, and print the sizes of both subsets.
+We shuffle the dataset, split it into training and testing sets with an 80-20 ratio,
+and print the sizes of both subsets.
 """
 
-data_copy = news_data[:]
-data_copy = news_data.sample(frac=1, random_state=42)
-
-train_ratio = 0.8
-train_size = int(train_ratio * len(data_copy))
-
-# Slice the dataset
-train_data = data_copy[:train_size]
-test_data = data_copy[train_size:]
+train_data, temp_data = train_test_split(news_data, test_size=0.2, random_state=42, shuffle=True)
+val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
 
 logger.info(f"Train size dataset length: {len(train_data)}")
 logger.info(f"Test size dataset length: {len(test_data)}")
+logger.info(f"Validation size dataset length: {len(val_data)}")
 
 if __name__ == "__main__":
     texts_content = list(train_data["Content"])
