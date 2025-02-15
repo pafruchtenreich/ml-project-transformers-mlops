@@ -7,7 +7,6 @@ Main python file
 
 import random
 import warnings
-import zipfile
 
 import evaluate
 import pandas as pd
@@ -25,6 +24,7 @@ from src.features.functions_preprocessing import (
     preprocess_summaries,
 )
 from src.features.tokenization import parallel_tokenize
+from src.load_dataset import load_dataset
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
 from src.set_up_config_device import (
@@ -43,18 +43,8 @@ cpu_count = get_allowed_cpu_count()
 
 n_process = set_up_config_device(cpu_count)
 
-"""
-Kaggle dataset
-
-Download and extract the news summarization dataset from Kaggle, then load it into a pandas DataFrame.
-"""
-
-# !kaggle datasets download -d sbhatti/news-summarization
-
-with zipfile.ZipFile("news-summarization.zip", "r") as zip_ref:
-    zip_ref.extractall("news-summarization")
-
-news_data = pd.read_csv("news-summarization/data.csv")
+# Load dataset
+news_data = load_dataset()
 
 # print(news_data.head())
 
