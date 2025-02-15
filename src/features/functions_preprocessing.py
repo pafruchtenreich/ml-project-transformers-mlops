@@ -1,3 +1,5 @@
+import os
+
 import matplotlib.pyplot as plt
 import spacy
 
@@ -43,7 +45,7 @@ def descriptive_statistics(df, column_name):
 
 def plot_text_length_distribution(df, column_name):
     """
-    Plots a histogram of text lengths from the specified column in the given DataFrame.
+    Plots a histogram of text lengths from the specified column in the given DataFrame and saves it.
 
     Parameters
     ----------
@@ -52,16 +54,12 @@ def plot_text_length_distribution(df, column_name):
     column_name : str
         The name of the column to analyze.
     """
-    # Calculate the length (number of characters) of each text entry in the column
+    logger = setup_logger()
+
     text_lengths = df[column_name].astype(str).str.len()
 
-    # Create the figure
     plt.figure(figsize=(10, 6))
-
-    # Plot the histogram
-    plt.hist(text_lengths, bins=50, edgecolor="black", alpha=0.7, color="blue")
-
-    # Calculate and plot the mean
+    plt.hist(text_lengths, bins=50, edgecolor="black", alpha=0.7)
     mean_val = text_lengths.mean()
     plt.axvline(
         mean_val,
@@ -70,15 +68,19 @@ def plot_text_length_distribution(df, column_name):
         linewidth=2,
         label=f"Mean: {mean_val:.2f}",
     )
-
-    # Configure labels, legend, and grid
-    plt.xlabel(f"Length of '{column_name}' (characters)", fontsize=14)
-    plt.ylabel("Frequency", fontsize=14)
-    plt.legend(fontsize=12)
+    plt.xlabel(f"Length of '{column_name}' (characters)")
+    plt.ylabel("Frequency")
+    plt.legend()
     plt.grid(axis="y", linestyle="--", alpha=0.7)
 
-    # Display the plot
-    plt.show()
+    output_dir = "output/graphs/"
+    plot_path = os.path.join(output_dir, f"{column_name}_text_length_distribution.png")
+    plt.savefig(plot_path)
+    plt.close()
+
+    logger.info(
+        f"Histogram of {column_name} lengths' distribution saved at {plot_path}"
+    )
 
 
 def preprocess_articles(texts, n_process, batch_size=32):
