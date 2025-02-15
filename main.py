@@ -5,21 +5,21 @@ Main python file
 # pip install -r requirements.txt
 # python -m spacy download en_core_web_sm
 
-import random
 import warnings
 
 import evaluate
 import pandas as pd
 import torch
 import torch.nn as nn
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertTokenizer
-from sklearn.model_selection import train_test_split
 
 from src.evaluation.model_evaluation import (
     generate_summaries_transformer,
 )
 from src.features.functions_preprocessing import (
+    descriptive_statistics,
     plot_text_length_distribution,
     preprocess_articles,
     preprocess_summaries,
@@ -47,38 +47,24 @@ n_process = set_up_config_device(cpu_count)
 # Load dataset
 news_data = load_dataset()
 
-# print(news_data.head())
-
-N = random.randint(1, len(news_data))
-
-# print(news_data["Content"][N])
-# print()
-# print(news_data["Summary"][N])
-
-
-lengths_article = news_data["Content"].str.len()
-lengths_article.describe()
-
-news_data = news_data[
-    (lengths_article >= lengths_article.quantile(0.10))
-    & (lengths_article <= lengths_article.quantile(0.90))
-]
+# Descriptive statistics
+descriptive_statistics(news_data, "Content")
+descriptive_statistics(news_data, "Summary")
 
 plot_text_length_distribution(news_data, "Content")
-
-lengths_summary = news_data["Summary"].str.len()
-lengths_summary.describe()
-
-news_data = news_data[
-    (lengths_summary >= lengths_summary.quantile(0.10))
-    & (lengths_summary <= lengths_summary.quantile(0.90))
-]
-
-news_data["Summary"].str.len().describe()
-
 plot_text_length_distribution(news_data, "Summary")
 
-# print(len(news_data))
+"""
+news_data = news_data[
+(lengths_article >= lengths_article.quantile(0.10))
+& (lengths_article <= lengths_article.quantile(0.90))
+]
+
+news_data = news_data[
+(lengths_summary >= lengths_summary.quantile(0.10))
+& (lengths_summary <= lengths_summary.quantile(0.90))
+]
+"""
 
 news_data.loc[:, "Content"] = preprocess_articles(
     news_data["Content"].tolist(), n_process=n_process, batch_size=32
@@ -98,7 +84,9 @@ We shuffle the dataset, split it into training and testing sets with an 80-20 ra
 and print the sizes of both subsets.
 """
 
-train_data, temp_data = train_test_split(news_data, test_size=0.2, random_state=42, shuffle=True)
+train_data, temp_data = train_test_split(
+    news_data, test_size=0.2, random_state=42, shuffle=True
+)
 val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
 
 logger.info(f"Train size dataset length: {len(train_data)}")
