@@ -36,7 +36,8 @@ from src.set_up_config_device import (
 from src.setup_logger import setup_logger
 
 BATCH_SIZE = 32
-SPLIT_RATIO = 0.8
+TEST_RATIO = 0.2
+VAL_RATIO = 0.5
 
 # Initialize logger
 logger = setup_logger()
@@ -51,11 +52,11 @@ n_process = set_up_config_device(cpu_count)
 news_data = load_dataset()
 
 # Descriptive statistics
-descriptive_statistics(news_data, "Content")
-descriptive_statistics(news_data, "Summary")
+descriptive_statistics(data=news_data, column_name="Content")
+descriptive_statistics(data=news_data, column_name="Summary")
 
-plot_text_length_distribution(news_data, "Content")
-plot_text_length_distribution(news_data, "Summary")
+plot_text_length_distribution(data=news_data, column_name="Content")
+plot_text_length_distribution(data=news_data, column_name="Summary")
 
 news_data.loc[:, "Content"] = preprocess_articles(
     news_data["Content"].tolist(), n_process=n_process, batch_size=BATCH_SIZE
@@ -81,13 +82,13 @@ and print the sizes of both subsets.
 """
 
 train_data, temp_data = train_test_split(
-    news_data, test_size=0.2, random_state=42, shuffle=True
+    news_data, test_size=TEST_RATIO, random_state=42, shuffle=True
 )
-val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
+val_data, test_data = train_test_split(temp_data, test_size=VAL_RATIO, random_state=42)
 
 logger.info(f"Train size dataset length: {len(train_data)}")
-logger.info(f"Test size dataset length: {len(test_data)}")
 logger.info(f"Validation size dataset length: {len(val_data)}")
+logger.info(f"Test size dataset length: {len(test_data)}")
 
 if __name__ == "__main__":
     tokenize_and_save(
