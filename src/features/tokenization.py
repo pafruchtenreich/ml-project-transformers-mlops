@@ -1,7 +1,13 @@
-import torch
 from concurrent.futures import ProcessPoolExecutor
 from functools import partial
+
+import pandas as pd
+import torch
 from transformers import BertTokenizer
+
+from src.setup_logger import setup_logger
+
+logger = setup_logger()
 
 
 def tokenize_chunk(texts_chunk, tokenizer_name: str, max_length: int = 512):
@@ -58,3 +64,35 @@ def parallel_tokenize(
     # Concatenate all chunk results
     tokenized_tensor = torch.cat(results, dim=0)
     return tokenized_tensor
+
+
+def tokenize_and_save(
+    data: pd.DataFrame,
+    column: str,
+    n_process: int,
+    filename: str,
+):
+    """
+    Tokenize the data and save it to a file.
+
+    Parameters:
+    - data: The dataframe that contains the data to tokenize.
+    - column: The column name of the data to tokenize (either Summary or Content).
+    - n_process: Number of processes to use.
+    - filename: Name of the file to save the tokenized data to (without file extension).
+
+    Returns:
+    - None
+    """
+    texts = list(data[column])
+    max_length = 512 if column == "Content" else 129
+    tokenized_data = parallel_tokenize(
+        texts,
+        tokenizer_name="bert-base-uncased",
+        max_workers=n_process,
+        chunk_size=2000,
+        max_length=max_length,
+    )
+    # print("tokenized_summaries.shape =", tokenized_summaries.shape)
+    logger.info(f"{filename}.shape = {tokenized_data.shape}")
+    torch.save(tokenized_data, f"{filename}.pt")
