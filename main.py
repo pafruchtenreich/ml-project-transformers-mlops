@@ -12,9 +12,9 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertTokenizer
 
+from src.create_dataloader import create_dataloader
 from src.evaluation.model_evaluation import (
     generate_summaries_transformer,
 )
@@ -38,6 +38,8 @@ from src.setup_logger import setup_logger
 BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
+N_EPOCHS = 25
+LEARNING_RATE = 2e-4
 
 # Initialize logger
 logger = setup_logger()
@@ -116,16 +118,18 @@ with warnings.catch_warnings():
     tokenized_summaries = torch.load("tokenized_summaries.pt")
     tokenized_articles_test = torch.load("tokenized_articles_test.pt")
 
-article_ids = tokenized_articles.long()
-summary_ids = tokenized_summaries.long()
+# article_ids = tokenized_articles.long()
+# summary_ids = tokenized_summaries.long()
 
 """
 Transformer
 """
 
-dataset = TensorDataset(tokenized_articles, tokenized_summaries)
-dataloader = DataLoader(
-    dataset, batch_size=BATCH_SIZE, num_workers=n_process, shuffle=True
+dataloader = create_dataloader(
+    tokenized_articles=tokenized_articles,
+    tokenized_summaries=tokenized_articles,
+    batch_size=BATCH_SIZE,
+    n_process=n_process,
 )
 
 modelTransformer = Transformer(
@@ -142,8 +146,8 @@ modelTransformer = Transformer(
 train_model(
     model=modelTransformer,
     dataloader=dataloader,
-    num_epochs=25,
-    optimizer=torch.optim.Adam(modelTransformer.parameters(), lr=2e-4),
+    num_epochs=N_EPOCHS,
+    optimizer=torch.optim.Adam(modelTransformer.parameters(), lr=LEARNING_RATE),
     loss_fn=nn.CrossEntropyLoss(
         ignore_index=BertTokenizer.from_pretrained("bert-base-uncased").pad_token_id
     ),
