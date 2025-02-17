@@ -7,8 +7,6 @@ from transformers import BertTokenizer
 
 from src.setup_logger import setup_logger
 
-logger = setup_logger()
-
 
 def tokenize_chunk(texts_chunk, tokenizer_name: str, max_length: int = 512):
     """
@@ -84,6 +82,7 @@ def tokenize_and_save(
     Returns:
     - None
     """
+    logger = setup_logger()
     texts = list(data[column])
     max_length = 512 if column == "Content" else 129
     tokenized_data = parallel_tokenize(
