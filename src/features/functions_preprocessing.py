@@ -84,3 +84,41 @@ def preprocess_summaries(texts, n_process, batch_size=32):
         tokens = [token.text.lower() for token in doc if not token.is_space]
         cleaned_summaries.append(" ".join(tokens))
     return cleaned_summaries
+
+
+def drop_short_long_articles(news_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Drops articles that are too short or too long based on the 10th and 90th percentiles of article lengths.
+
+    Parameters:
+     - news_data : pd.DataFrame : The DataFrame containing the news data.
+
+    Returns:
+    - pd.DataFrame : The DataFrame with the short and long articles removed.
+    """
+    lengths_article = news_data["Content"].str.len()
+
+    news_data = news_data[
+        (lengths_article >= lengths_article.quantile(0.10))
+        & (lengths_article <= lengths_article.quantile(0.90))
+    ]
+    return news_data
+
+
+def drop_short_long_summaries(news_data: pd.DataFrame) -> pd.DataFrame:
+    """
+    Drops summaries that are too short or too long based on the 10th and 90th percentiles of summary lengths.
+
+    Parameters:
+     - news_data : pd.DataFrame : The DataFrame containing the news data.
+
+    Returns:
+    - pd.DataFrame : The DataFrame with the short and long summaries removed.
+    """
+    lengths_summary = news_data["Summary"].str.len()
+
+    news_data = news_data[
+        (lengths_summary >= lengths_summary.quantile(0.10))
+        & (lengths_summary <= lengths_summary.quantile(0.90))
+    ]
+    return news_data
