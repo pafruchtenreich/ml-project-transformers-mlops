@@ -11,6 +11,7 @@ import evaluate
 import pandas as pd
 import torch
 import torch.nn as nn
+from sklearn.model_selection import train_test_split
 from torch.utils.data import DataLoader, TensorDataset
 from transformers import BertTokenizer
 
@@ -18,8 +19,8 @@ from src.evaluation.model_evaluation import (
     generate_summaries_transformer,
 )
 from src.features.functions_preprocessing import (
-    drop_short_long_articles,
-    drop_short_long_summaries,
+    descriptive_statistics,
+    plot_text_length_distribution,
     preprocess_articles,
     preprocess_summaries,
 )
@@ -33,7 +34,6 @@ from src.set_up_config_device import (
     set_up_device,
 )
 from src.setup_logger import setup_logger
-from src.split_train_test import split_train_test
 
 BATCH_SIZE = 32
 SPLIT_RATIO = 0.8
@@ -50,11 +50,13 @@ n_process = set_up_config_device(cpu_count)
 # Load dataset
 news_data = load_dataset()
 
-# Drop the rows with too long/short (based on 10th and 90th percentiles) articles or summaries
-news_data = drop_short_long_articles(news_data)
-news_data = drop_short_long_summaries(news_data)
+# Descriptive statistics
+descriptive_statistics(news_data, "Content")
+descriptive_statistics(news_data, "Summary")
 
-# Preprocess the articles and summaries (lowercasing + tokens)
+plot_text_length_distribution(news_data, "Content")
+plot_text_length_distribution(news_data, "Summary")
+
 news_data.loc[:, "Content"] = preprocess_articles(
     news_data["Content"].tolist(), n_process=n_process, batch_size=BATCH_SIZE
 )
@@ -71,9 +73,21 @@ logger.info(
 
 news_data = pd.read_parquet("news_data_cleaned.parquet")
 
-train_data, test_data = split_train_test(news_data, ratio=SPLIT_RATIO)
+"""
+Tokenization
+
+We shuffle the dataset, split it into training and testing sets with an 80-20 ratio,
+and print the sizes of both subsets.
+"""
+
+train_data, temp_data = train_test_split(
+    news_data, test_size=0.2, random_state=42, shuffle=True
+)
+val_data, test_data = train_test_split(temp_data, test_size=0.5, random_state=42)
+
 logger.info(f"Train size dataset length: {len(train_data)}")
 logger.info(f"Test size dataset length: {len(test_data)}")
+logger.info(f"Validation size dataset length: {len(val_data)}")
 
 if __name__ == "__main__":
     tokenize_and_save(

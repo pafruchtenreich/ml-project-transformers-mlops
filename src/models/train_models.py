@@ -8,26 +8,26 @@ from src.setup_logger import setup_logger
 
 def train_model(
     model,
-    dataloader,
+    train_dataloader,
+    val_dataloader,
     num_epochs,
     optimizer,
     loss_fn,
-    # obsolete
     model_name,
     device,
-    teacher_forcing_ratio=None,
 ):
     """
-    Generalized function to train a model (Seq2Seq, Transformer, or BERT).
+    Generalized function to train a transformer model with validation.
 
     Parameters:
     - model (torch.nn.Module): The model to train.
-    - dataloader (DataLoader): DataLoader for the training data.
+    - train_dataloader (DataLoader): DataLoader for the training data.
+    - val_dataloader (DataLoader): DataLoader for the validation data.
     - num_epochs (int): Number of epochs to train for.
     - optimizer (torch.optim.Optimizer): Optimizer for training.
     - loss_fn (torch.nn.Module): Loss function.
+    - model_name (str): Name used to save model checkpoints.
     - device (torch.device): Device to train on (CPU or GPU).
-    - teacher_forcing_ratio (float or None): Ratio for teacher forcing (only for Seq2Seq).
 
     Returns:
     - None
@@ -38,11 +38,15 @@ def train_model(
 
     for epoch in range(num_epochs):
         epoch_start_time = time.time()
+
+        # ----------------
+        # Training Phase
+        # ----------------
         model.train()
-        total_loss = 0
+        total_train_loss = 0
 
         for step, batch in enumerate(
-            tqdm(dataloader, desc=f"Epoch {epoch+1}/{num_epochs}")
+            tqdm(train_dataloader, desc=f"Epoch {epoch + 1}/{num_epochs} [TRAIN]")
         ):
             input_batch, summary_batch = batch
             input_batch = input_batch.to(device)
@@ -58,7 +62,7 @@ def train_model(
                 outputs.reshape(-1, outputs.shape[-1]), shifted_target.reshape(-1)
             )
 
-            total_loss += loss.item()
+            total_train_loss += loss.item()
 
             # Backward pass
             loss.backward()
@@ -67,23 +71,51 @@ def train_model(
             optimizer.step()
 
             if step % 1000 == 0:
-                logger.info(f"Epoch: {epoch+1}, Step: {step}, Loss: {loss.item():.4f}")
+                logger.info(
+                    f"[TRAIN] Epoch: {epoch + 1}, Step: {step}, Loss: {loss.item():.4f}"
+                )
 
-        # Calculate average loss for the epoch
-        avg_loss = total_loss / len(dataloader)
+        # Calculate average training loss for the epoch
+        avg_train_loss = total_train_loss / len(train_dataloader)
+
+        # -------------------
+        # Validation Phase
+        # -------------------
+        model.eval()
+        total_val_loss = 0
+
+        with torch.no_grad():
+            for step, batch in enumerate(
+                tqdm(val_dataloader, desc=f"Epoch {epoch + 1}/{num_epochs} [VAL]")
+            ):
+                input_batch, summary_batch = batch
+                input_batch = input_batch.to(device)
+                summary_batch = summary_batch.to(device)
+
+                outputs = model(input_batch.long(), summary_batch[:, :-1])
+                shifted_target = summary_batch[:, 1:]
+                val_loss = loss_fn(
+                    outputs.reshape(-1, outputs.shape[-1]), shifted_target.reshape(-1)
+                )
+                total_val_loss += val_loss.item()
+
+        avg_val_loss = total_val_loss / len(val_dataloader)
 
         # Measure epoch time
         epoch_end_time = time.time()
         epoch_duration = epoch_end_time - epoch_start_time
 
         logger.info(
-            f"Epoch {epoch+1}/{num_epochs} - "
-            f"Average Loss: {avg_loss:.4f} - "
+            f"Epoch {epoch + 1}/{num_epochs} - "
+            f"Train Loss: {avg_train_loss:.4f} - "
+            f"Val Loss: {avg_val_loss:.4f} - "
             f"Time: {epoch_duration:.2f}s"
         )
+
+        # Save model after each epoch
         torch.save(
             model.state_dict(),
-            f"model_weights/{model_name.lower()}_weights_{epoch+1}_epochs.pth",
+            f"model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
         )
 
     # Measure total training time

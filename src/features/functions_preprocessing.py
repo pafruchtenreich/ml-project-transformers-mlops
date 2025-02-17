@@ -1,14 +1,19 @@
+import os
+
 import matplotlib.pyplot as plt
-import pandas as pd
+import numpy as np
 import spacy
+
+from src.setup_logger import setup_logger
 
 # Load spaCy English model
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 
-def plot_text_length_distribution(df, column_name):
+def descriptive_statistics(df, column_name):
     """
-    Plots a histogram of text lengths from the specified column in the given DataFrame.
+    Calculates and logs descriptive statistics for text length
+     in the specified column of a DataFrame.
 
     Parameters
     ----------
@@ -17,16 +22,45 @@ def plot_text_length_distribution(df, column_name):
     column_name : str
         The name of the column to analyze.
     """
-    # Calculate the length (number of characters) of each text entry in the column
+    logger = setup_logger()
+
+    # Calculate text lengths
     text_lengths = df[column_name].astype(str).str.len()
 
-    # Create the figure
+    # Calculate descriptive statistics
+    desc_stats = {
+        "mean": text_lengths.mean(),
+        "median": text_lengths.median(),
+        "max": text_lengths.max(),
+        "min": text_lengths.min(),
+        "25%": text_lengths.quantile(0.25),
+        "75%": text_lengths.quantile(0.75),
+    }
+
+    # Log descriptive statistics
+    for key, value in desc_stats.items():
+        logger.info(f"{key.capitalize()}: {value}")
+
+    return desc_stats
+
+
+def plot_text_length_distribution(df, column_name):
+    """
+    Plots a histogram of text lengths from the specified column in the given DataFrame and saves it.
+
+    Parameters
+    ----------
+    df : pd.DataFrame
+        The DataFrame containing the data.
+    column_name : str
+        The name of the column to analyze.
+    """
+    logger = setup_logger()
+
+    text_lengths = df[column_name].astype(str).str.len()
+
     plt.figure(figsize=(10, 6))
-
-    # Plot the histogram
-    plt.hist(text_lengths, bins=50, edgecolor="black", alpha=0.7, color="blue")
-
-    # Calculate and plot the mean
+    plt.hist(text_lengths, bins=50, edgecolor="black", alpha=0.7)
     mean_val = text_lengths.mean()
     plt.axvline(
         mean_val,
@@ -35,29 +69,32 @@ def plot_text_length_distribution(df, column_name):
         linewidth=2,
         label=f"Mean: {mean_val:.2f}",
     )
-
-    # Configure labels, legend, and grid
-    plt.xlabel(f"Length of '{column_name}' (characters)", fontsize=14)
-    plt.ylabel("Frequency", fontsize=14)
-    plt.legend(fontsize=12)
+    plt.xlabel(f"Length of '{column_name}' (characters)")
+    plt.ylabel("Frequency")
+    plt.legend()
     plt.grid(axis="y", linestyle="--", alpha=0.7)
 
-    # Display the plot
-    plt.show()
+    output_dir = "output/graphs/"
+    plot_path = os.path.join(output_dir, f"{column_name}_text_length_distribution.png")
+    plt.savefig(plot_path)
+    plt.close()
+
+    logger.info(
+        f"Histogram of {column_name} lengths' distribution saved at {plot_path}"
+    )
+
+
+def remove_outlier(texts, lower_percent=10, upper_percent=90):
+    text_lengths = np.array([len(text) for text in texts])
+    lower_bound = np.percentile(text_lengths, lower_percent)
+    upper_bound = np.percentile(text_lengths, upper_percent)
+    return [text for text in texts if lower_bound <= len(text) <= upper_bound]
 
 
 def preprocess_articles(texts, n_process, batch_size=32):
-    """
-    Args:
-        texts (List[str]): List of text documents to preprocess.
-        batch_size (int): Batch size for parallel processing.
-        n_process (int): Number of processes for parallel execution.
-
-    Returns:
-        List[str]: A list of cleaned articles (lemmatized, no stopwords/punct/spaces).
-    """
+    filtered_texts = remove_outlier(texts)
     cleaned_texts = []
-    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+    for doc in nlp.pipe(filtered_texts, batch_size=batch_size, n_process=n_process):
         tokens = [
             token.lemma_.lower()
             for token in doc
@@ -68,57 +105,9 @@ def preprocess_articles(texts, n_process, batch_size=32):
 
 
 def preprocess_summaries(texts, n_process, batch_size=32):
-    """
-    Performs minimal preprocessing for summaries (lowercasing + tokens).
-
-    Args:
-        texts (List[str]): List of summary texts.
-        batch_size (int): Batch size for parallel processing.
-        n_process (int): Number of processes for parallel execution.
-
-    Returns:
-        List[str]: A list of preprocessed summaries.
-    """
+    filtered_texts = remove_outlier(texts)
     cleaned_summaries = []
-    for doc in nlp.pipe(texts, batch_size=batch_size, n_process=n_process):
+    for doc in nlp.pipe(filtered_texts, batch_size=batch_size, n_process=n_process):
         tokens = [token.text.lower() for token in doc if not token.is_space]
         cleaned_summaries.append(" ".join(tokens))
     return cleaned_summaries
-
-
-def drop_short_long_articles(news_data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Drops articles that are too short or too long based on the 10th and 90th percentiles of article lengths.
-
-    Parameters:
-     - news_data : pd.DataFrame : The DataFrame containing the news data.
-
-    Returns:
-    - pd.DataFrame : The DataFrame with the short and long articles removed.
-    """
-    lengths_article = news_data["Content"].str.len()
-
-    news_data = news_data[
-        (lengths_article >= lengths_article.quantile(0.10))
-        & (lengths_article <= lengths_article.quantile(0.90))
-    ]
-    return news_data
-
-
-def drop_short_long_summaries(news_data: pd.DataFrame) -> pd.DataFrame:
-    """
-    Drops summaries that are too short or too long based on the 10th and 90th percentiles of summary lengths.
-
-    Parameters:
-     - news_data : pd.DataFrame : The DataFrame containing the news data.
-
-    Returns:
-    - pd.DataFrame : The DataFrame with the short and long summaries removed.
-    """
-    lengths_summary = news_data["Summary"].str.len()
-
-    news_data = news_data[
-        (lengths_summary >= lengths_summary.quantile(0.10))
-        & (lengths_summary <= lengths_summary.quantile(0.90))
-    ]
-    return news_data
