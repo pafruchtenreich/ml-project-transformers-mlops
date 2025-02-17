@@ -10,14 +10,14 @@ from src.setup_logger import setup_logger
 nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
 
 
-def descriptive_statistics(df, column_name):
+def descriptive_statistics(data, column_name):
     """
     Calculates and logs descriptive statistics for text length
-     in the specified column of a DataFrame.
+    in the specified column of a DataFrame.
 
     Parameters
     ----------
-    df : pd.DataFrame
+    data : pd.DataFrame
         The DataFrame containing the data.
     column_name : str
         The name of the column to analyze.
@@ -25,7 +25,7 @@ def descriptive_statistics(df, column_name):
     logger = setup_logger()
 
     # Calculate text lengths
-    text_lengths = df[column_name].astype(str).str.len()
+    text_lengths = data[column_name].astype(str).str.len()
 
     # Calculate descriptive statistics
     desc_stats = {
@@ -44,20 +44,20 @@ def descriptive_statistics(df, column_name):
     return desc_stats
 
 
-def plot_text_length_distribution(df, column_name):
+def plot_text_length_distribution(data, column_name):
     """
     Plots a histogram of text lengths from the specified column in the given DataFrame and saves it.
 
     Parameters
     ----------
-    df : pd.DataFrame
+    data : pd.DataFrame
         The DataFrame containing the data.
     column_name : str
         The name of the column to analyze.
     """
     logger = setup_logger()
 
-    text_lengths = df[column_name].astype(str).str.len()
+    text_lengths = data[column_name].astype(str).str.len()
 
     plt.figure(figsize=(10, 6))
     plt.hist(text_lengths, bins=50, edgecolor="black", alpha=0.7)
