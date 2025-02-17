@@ -1,6 +1,8 @@
 import kagglehub
 import pandas as pd
 
+from src.setup_logger import setup_logger
+
 
 def load_dataset():
     """
@@ -13,6 +15,8 @@ def load_dataset():
     Returns:
     - news_data (pd.DataFrame): A pandas DataFrame containing the news summarization dataset.
     """
+    logger = setup_logger()
     path = kagglehub.dataset_download("sbhatti/news-summarization")
+    logger.info(f"Dataset loaded and saved at {path}/data.csv")
     news_data = pd.read_csv(path + "/data.csv")
     return news_data
