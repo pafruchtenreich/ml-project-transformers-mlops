@@ -58,7 +58,7 @@ def set_up_config_device(cpu_count: int) -> int:
     - n_process (int): The number of processes used by torch.
     """
 
-    n_process = max(1, cpu_count // 2)
+    n_process = max(1, 3 * cpu_count // 4)
 
     torch.set_num_threads(n_process)
     logger.info(f"torch set up to use {n_process} processes")

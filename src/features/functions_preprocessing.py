@@ -39,7 +39,7 @@ def descriptive_statistics(data, column_name):
 
     # Log descriptive statistics
     for key, value in desc_stats.items():
-        logger.info(f"{key.capitalize()}: {value}")
+        logger.info(f"{key.capitalize()} {column_name} length: {value}")
 
     return desc_stats
 
@@ -75,6 +75,8 @@ def plot_text_length_distribution(data, column_name):
     plt.grid(axis="y", linestyle="--", alpha=0.7)
 
     output_dir = "output/graphs/"
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
     plot_path = os.path.join(output_dir, f"{column_name}_text_length_distribution.png")
     plt.savefig(plot_path)
     plt.close()

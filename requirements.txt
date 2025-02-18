@@ -1,5 +1,6 @@
 ipywidgets
 kaggle
+kagglehub
 transformers
 torch
 unidecode
@@ -11,4 +12,3 @@ numpy
 pandas
 ruff>=0.7.1
 pre-commit
-logging
