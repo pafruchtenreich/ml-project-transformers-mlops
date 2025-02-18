@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
-from transformers import BertTokenizer
+from transformers import BartTokenizer, get_linear_schedule_with_warmup
 
 from src.create_dataloader import create_dataloader
 from src.evaluation.model_evaluation import (
@@ -142,12 +142,30 @@ with warnings.catch_warnings():
 Transformer
 """
 
+tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+vocab_size = len(tokenizer)
+
+params = {
+    "pad_idx": 0,
+    "voc_size": vocab_size,
+    "hidden_size": 512,
+    "n_head": 8,
+    "max_len": 512,
+    "dec_max_len": 150,
+    "ffn_hidden": 2048,
+    "n_layers": 6,
+}
+
+modelTransformer = Transformer(**params)
+
 dataloader_train = create_dataloader(
     tokenized_articles=tokenized_articles_train,
     tokenized_summaries=tokenized_summaries_train,
     batch_size=BATCH_SIZE,
     n_process=n_process,
 )
+
+
 dataloader_val = create_dataloader(
     tokenized_articles=tokenized_articles_val,
     tokenized_summaries=tokenized_summaries_val,
@@ -155,27 +173,31 @@ dataloader_val = create_dataloader(
     n_process=n_process,
 )
 
-params = {
-    "pad_idx": 0,
-    "voc_size": BertTokenizer.from_pretrained("bert-base-uncased").vocab_size,
-    "hidden_size": 128,
-    "n_head": 8,
-    "max_len": 512,
-    "dec_max_len": 512,
-    "ffn_hidden": 128,
-    "n_layers": 3,
-}
+optimizer = torch.optim.AdamW(
+    modelTransformer.parameters(),
+    lr=LEARNING_RATE,
+    betas=(0.9, 0.98),
+    eps=1e-9,
+    weight_decay=1e-2,
+)
 
-modelTransformer = Transformer(**params)
+num_train_steps = len(dataloader_train) * N_EPOCHS
+warmup_steps = int(0.1 * num_train_steps)
+
+scheduler = get_linear_schedule_with_warmup(
+    optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_train_steps
+)
 
 train_model(
     model=modelTransformer,
     train_dataloader=dataloader_train,
     val_dataloader=dataloader_val,
     num_epochs=N_EPOCHS,
-    optimizer=torch.optim.Adam(modelTransformer.parameters(), lr=LEARNING_RATE),
+    optimizer=optimizer,
+    scheduler=scheduler,
     loss_fn=nn.CrossEntropyLoss(
-        ignore_index=BertTokenizer.from_pretrained("bert-base-uncased").pad_token_id
+        ignore_index=tokenizer.pad_token_id,
+        label_smoothing=0.1,
     ),
     model_name="Transformer",
     device=device,
