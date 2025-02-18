@@ -143,11 +143,15 @@ modelTransformer = Transformer(
     n_layers=3,
 )
 
+optimizer = torch.optim.Adam(modelTransformer.parameters(), lr=LEARNING_RATE)
+scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
+
 train_model(
     model=modelTransformer,
     dataloader=dataloader,
     num_epochs=N_EPOCHS,
-    optimizer=torch.optim.Adam(modelTransformer.parameters(), lr=LEARNING_RATE),
+    optimizer=optimizer,
+    scheduler=scheduler,
     loss_fn=nn.CrossEntropyLoss(
         ignore_index=BertTokenizer.from_pretrained("bert-base-uncased").pad_token_id
     ),

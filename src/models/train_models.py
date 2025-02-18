@@ -12,6 +12,7 @@ def train_model(
     val_dataloader,
     num_epochs,
     optimizer,
+    scheduler,
     loss_fn,
     model_name,
     device,
@@ -73,6 +74,9 @@ def train_model(
 
             # Update weights
             optimizer.step()
+
+            # Update learning rate
+            scheduler.step()
 
             if step % 1000 == 0:
                 current_lr = optimizer.param_groups[0]["lr"]
