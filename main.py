@@ -12,7 +12,7 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
-from transformers import BertTokenizer
+from transformers import BertTokenizer, get_linear_schedule_with_warmup
 
 from src.create_dataloader import create_dataloader
 from src.evaluation.model_evaluation import (
@@ -135,16 +135,28 @@ dataloader = create_dataloader(
 modelTransformer = Transformer(
     pad_idx=0,
     voc_size=BertTokenizer.from_pretrained("bert-base-uncased").vocab_size,
-    hidden_size=128,
+    hidden_size=512,
     n_head=8,
     max_len=512,
-    dec_max_len=512,
-    ffn_hidden=128,
-    n_layers=3,
+    dec_max_len=150,
+    ffn_hidden=2048,
+    n_layers=6,
 )
 
-optimizer = torch.optim.Adam(modelTransformer.parameters(), lr=LEARNING_RATE)
-scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=5, gamma=0.5)
+optimizer = torch.optim.AdamW(
+    modelTransformer.parameters(),
+    lr=LEARNING_RATE,
+    betas=(0.9, 0.98),
+    eps=1e-9,
+    weight_decay=1e-2,
+)
+
+num_train_steps = len(dataloader) * N_EPOCHS
+warmup_steps = int(0.1 * num_train_steps)
+
+scheduler = get_linear_schedule_with_warmup(
+    optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_train_steps
+)
 
 train_model(
     model=modelTransformer,
