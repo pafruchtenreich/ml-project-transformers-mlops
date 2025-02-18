@@ -5,7 +5,9 @@ from torch import nn
 device = (
     "cuda"
     if torch.cuda.is_available()
-    else "mps" if torch.backends.mps.is_available() else "cpu"
+    else "mps"
+    if torch.backends.mps.is_available()
+    else "cpu"
 )
 
 
@@ -43,7 +45,7 @@ class AttentionLayer(nn.Module):
         """
         batch_size, length, _ = q.shape
         # apply projections
-        q, k, v = self.w_q(q), self.w_k(v), self.w_v(v)
+        q, k, v = self.w_q(q), self.w_k(k), self.w_v(v)
 
         # split heads
         # dims: (N,h,L,d)
@@ -331,7 +333,8 @@ class Transformer(nn.Module):
             ]
         )
 
-        self.linear = nn.Linear(hidden_size, voc_size)
+        self.linear = nn.Linear(hidden_size, voc_size, bias=False)
+        self.linear.weight = self.dec_embedding.tok_emb.weight
 
     def forward(self, src, trg):
         """
