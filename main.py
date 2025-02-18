@@ -145,7 +145,7 @@ Transformer
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
 vocab_size = len(tokenizer)
 
-params = {
+params_model = {
     "pad_idx": 0,
     "voc_size": vocab_size,
     "hidden_size": 512,
@@ -156,7 +156,7 @@ params = {
     "n_layers": 6,
 }
 
-modelTransformer = Transformer(**params)
+modelTransformer = Transformer(**params_model)
 
 dataloader_train = create_dataloader(
     tokenized_articles=tokenized_articles_train,
@@ -188,22 +188,27 @@ scheduler = get_linear_schedule_with_warmup(
     optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_train_steps
 )
 
-train_model(
-    model=modelTransformer,
-    train_dataloader=dataloader_train,
-    val_dataloader=dataloader_val,
-    num_epochs=N_EPOCHS,
-    optimizer=optimizer,
-    scheduler=scheduler,
-    loss_fn=nn.CrossEntropyLoss(
+params_training = {
+    "model": modelTransformer,
+    "train_dataloader": dataloader_train,
+    "val_dataloader": dataloader_val,
+    "num_epochs": N_EPOCHS,
+    "optimizer": optimizer,
+    "scheduler": scheduler,
+    "loss_fn": nn.CrossEntropyLoss(
         ignore_index=tokenizer.pad_token_id,
         label_smoothing=0.1,
     ),
-    model_name="Transformer",
-    device=device,
-)
+    "model_name": "Transformer",
+    "device": device,
+    "grad_accum_steps": 1,
+    "use_amp": True,
+    "early_stopping_patience": None,
+}
 
-modelTransformer = Transformer(**params)
+train_model(**params_training)
+
+modelTransformer = Transformer(**params_model)
 
 modelTransformer.load_state_dict(
     torch.load("output/model_weights/transformer_weights_25_epochs.pth")
