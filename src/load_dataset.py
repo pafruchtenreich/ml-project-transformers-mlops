@@ -19,4 +19,7 @@ def load_dataset():
     path = kagglehub.dataset_download("sbhatti/news-summarization")
     logger.info(f"Dataset loaded and saved at {path}/data.csv")
     news_data = pd.read_csv(path + "/data.csv")
+
+    news_data.loc[:, "Content"] = news_data["Content"].astype(str)
+    news_data.loc[:, "Summary"] = news_data["Summary"].astype(str)
     return news_data

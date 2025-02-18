@@ -53,13 +53,6 @@ n_process = set_up_config_device(cpu_count)
 # Load dataset
 news_data = load_dataset()
 
-# Descriptive statistics
-descriptive_statistics(data=news_data, column_name="Content")
-descriptive_statistics(data=news_data, column_name="Summary")
-
-plot_text_length_distribution(data=news_data, column_name="Content")
-plot_text_length_distribution(data=news_data, column_name="Summary")
-
 news_data.loc[:, "Content"] = preprocess_articles(
     news_data["Content"].tolist(), n_process=n_process, batch_size=BATCH_SIZE
 )
@@ -75,6 +68,13 @@ logger.info(
 )
 
 news_data = pd.read_parquet("news_data_cleaned.parquet")
+
+# Descriptive statistics
+descriptive_statistics(data=news_data, column_name="Content")
+descriptive_statistics(data=news_data, column_name="Summary")
+
+plot_text_length_distribution(data=news_data, column_name="Content")
+plot_text_length_distribution(data=news_data, column_name="Summary")
 
 """
 Tokenization
