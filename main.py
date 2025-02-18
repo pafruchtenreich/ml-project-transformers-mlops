@@ -131,20 +131,26 @@ tokenize_and_save(
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    tokenized_articles_train = torch.load("tokenized_articles.pt")
-    tokenized_summaries_train = torch.load("tokenized_summaries.pt")
+    tokenized_articles_train = torch.load("tokenized_articles_train.pt")
+    tokenized_summaries_train = torch.load("tokenized_summaries_train.pt")
     tokenized_articles_test = torch.load("tokenized_articles_test.pt")
-
-# article_ids = tokenized_articles.long()
-# summary_ids = tokenized_summaries.long()
+    tokenized_summaries_test = torch.load("tokenized_summaries_test.pt")
+    tokenized_articles_val = torch.load("tokenized_articles_val.pt")
+    tokenized_summaries_val = torch.load("tokenized_summaries_val.pt")
 
 """
 Transformer
 """
 
-dataloader = create_dataloader(
+dataloader_train = create_dataloader(
     tokenized_articles=tokenized_articles_train,
     tokenized_summaries=tokenized_summaries_train,
+    batch_size=BATCH_SIZE,
+    n_process=n_process,
+)
+dataloader_val = create_dataloader(
+    tokenized_articles=tokenized_articles_val,
+    tokenized_summaries=tokenized_summaries_val,
     batch_size=BATCH_SIZE,
     n_process=n_process,
 )
@@ -162,7 +168,8 @@ modelTransformer = Transformer(
 
 train_model(
     model=modelTransformer,
-    dataloader=dataloader,
+    train_dataloader=dataloader_train,
+    val_dataloader=dataloader_val,
     num_epochs=N_EPOCHS,
     optimizer=torch.optim.Adam(modelTransformer.parameters(), lr=LEARNING_RATE),
     loss_fn=nn.CrossEntropyLoss(
