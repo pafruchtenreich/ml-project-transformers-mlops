@@ -92,30 +92,47 @@ logger.info(f"Train size dataset length: {len(train_data)}")
 logger.info(f"Validation size dataset length: {len(val_data)}")
 logger.info(f"Test size dataset length: {len(test_data)}")
 
-if __name__ == "__main__":
-    tokenize_and_save(
-        data=train_data,
-        column="Content",
-        n_process=n_process,
-        filename="tokenized_articles",
-    )
-    tokenize_and_save(
-        data=train_data,
-        column="Summary",
-        n_process=n_process,
-        filename="tokenized_summaries",
-    )
-    tokenize_and_save(
-        data=test_data,
-        column="Content",
-        n_process=n_process,
-        filename="tokenized_articles_test",
-    )
+tokenize_and_save(
+    data=train_data,
+    column="Content",
+    n_process=n_process,
+    filename="tokenized_articles_train",
+)
+tokenize_and_save(
+    data=train_data,
+    column="Summary",
+    n_process=n_process,
+    filename="tokenized_summaries_train",
+)
+tokenize_and_save(
+    data=test_data,
+    column="Content",
+    n_process=n_process,
+    filename="tokenized_articles_test",
+)
+tokenize_and_save(
+    data=test_data,
+    column="Summary",
+    n_process=n_process,
+    filename="tokenized_summaries_test",
+)
+tokenize_and_save(
+    data=val_data,
+    column="Content",
+    n_process=n_process,
+    filename="tokenized_articles_val",
+)
+tokenize_and_save(
+    data=val_data,
+    column="Summary",
+    n_process=n_process,
+    filename="tokenized_summaries_val",
+)
 
 with warnings.catch_warnings():
     warnings.simplefilter("ignore")
-    tokenized_articles = torch.load("tokenized_articles.pt")
-    tokenized_summaries = torch.load("tokenized_summaries.pt")
+    tokenized_articles_train = torch.load("tokenized_articles.pt")
+    tokenized_summaries_train = torch.load("tokenized_summaries.pt")
     tokenized_articles_test = torch.load("tokenized_articles_test.pt")
 
 # article_ids = tokenized_articles.long()
@@ -126,8 +143,8 @@ Transformer
 """
 
 dataloader = create_dataloader(
-    tokenized_articles=tokenized_articles,
-    tokenized_summaries=tokenized_articles,
+    tokenized_articles=tokenized_articles_train,
+    tokenized_summaries=tokenized_summaries_train,
     batch_size=BATCH_SIZE,
     n_process=n_process,
 )
