@@ -155,16 +155,18 @@ dataloader_val = create_dataloader(
     n_process=n_process,
 )
 
-modelTransformer = Transformer(
-    pad_idx=0,
-    voc_size=BertTokenizer.from_pretrained("bert-base-uncased").vocab_size,
-    hidden_size=128,
-    n_head=8,
-    max_len=512,
-    dec_max_len=512,
-    ffn_hidden=128,
-    n_layers=3,
-)
+params = {
+    "pad_idx": 0,
+    "voc_size": BertTokenizer.from_pretrained("bert-base-uncased").vocab_size,
+    "hidden_size": 128,
+    "n_head": 8,
+    "max_len": 512,
+    "dec_max_len": 512,
+    "ffn_hidden": 128,
+    "n_layers": 3,
+}
+
+modelTransformer = Transformer(**params)
 
 train_model(
     model=modelTransformer,
@@ -179,16 +181,8 @@ train_model(
     device=device,
 )
 
-modelTransformer = Transformer(
-    pad_idx=0,
-    voc_size=BertTokenizer.from_pretrained("bert-base-uncased").vocab_size,
-    hidden_size=128,
-    n_head=8,
-    max_len=512,
-    dec_max_len=128,
-    ffn_hidden=128,
-    n_layers=3,
-)
+modelTransformer = Transformer(**params)
+
 modelTransformer.load_state_dict(
     torch.load("output/model_weights/transformer_weights_25_epochs.pth")
 )
