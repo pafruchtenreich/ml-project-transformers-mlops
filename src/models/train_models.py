@@ -35,6 +35,7 @@ def train_model(
     logger = setup_logger()
     model.to(device)
     total_start_time = time.time()
+    best_val_loss = float("inf")
 
     for epoch in range(num_epochs):
         epoch_start_time = time.time()
@@ -117,10 +118,15 @@ def train_model(
         )
 
         # Save model after each epoch
-        torch.save(
-            model.state_dict(),
-            f"model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
-        )
+        if avg_val_loss < best_val_loss:
+            best_val_loss = avg_val_loss
+            torch.save(
+                model.state_dict(),
+                f"model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
+            )
+            logger.info(
+                f"Best model saved at epoch {epoch+1} with val loss {avg_val_loss:.4f}"
+            )
 
     # Measure total training time
     total_end_time = time.time()
