@@ -74,8 +74,9 @@ def train_model(
             optimizer.step()
 
             if step % 1000 == 0:
+                current_lr = optimizer.param_groups[0]["lr"]
                 logger.info(
-                    f"[TRAIN] Epoch: {epoch + 1}, Step: {step}, Loss: {loss.item():.4f}"
+                    f"[TRAIN] Epoch: {epoch+1}, Step: {step}, Loss: {loss.item():.4f}, LR: {current_lr}"
                 )
 
         # Calculate average training loss for the epoch
