@@ -153,7 +153,8 @@ train_model(
     optimizer=optimizer,
     scheduler=scheduler,
     loss_fn=nn.CrossEntropyLoss(
-        ignore_index=BertTokenizer.from_pretrained("bert-base-uncased").pad_token_id
+        ignore_index=BertTokenizer.from_pretrained("bert-base-uncased").pad_token_id,
+        label_smoothing=0.1,
     ),
     model_name="Transformer",
     device=device,
