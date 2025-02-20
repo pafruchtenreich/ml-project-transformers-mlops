@@ -4,9 +4,6 @@ import torch
 
 from src.setup_logger import setup_logger
 
-# Initialize logger
-logger = setup_logger()
-
 
 def set_up_device():
     """
@@ -18,6 +15,7 @@ def set_up_device():
     Returns:
     -str: The device to use for the model.
     """
+    logger = setup_logger()
     device = (
         "cuda"
         if torch.cuda.is_available()
@@ -39,6 +37,7 @@ def get_allowed_cpu_count() -> int:
     Returns:
     -int: The number of CPU cores available for this process.
     """
+    logger = setup_logger()
     try:
         nbr_cpu = len(os.sched_getaffinity(0))
     except AttributeError:
@@ -57,6 +56,7 @@ def set_up_config_device(cpu_count: int) -> int:
     Returns:
     - n_process (int): The number of processes used by torch.
     """
+    logger = setup_logger()
 
     n_process = max(1, 3 * cpu_count // 4)
 
