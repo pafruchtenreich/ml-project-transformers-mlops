@@ -111,110 +111,97 @@ if __name__ == "__main__":
     logger.info(f"Validation size dataset length: {len(val_data)}")
     logger.info(f"Test size dataset length: {len(test_data)}")
 
-    tokenize_and_save_bart(
-        data=train_data,
-        column="Content",
-        n_process=n_process,
-        filename="tokenized_articles_train",
-    )
-    tokenize_and_save_bart(
-        data=train_data,
-        column="Summary",
-        n_process=n_process,
-        filename="tokenized_summaries_train",
-    )
-    tokenize_and_save_bart(
-        data=test_data,
-        column="Content",
-        n_process=n_process,
-        filename="tokenized_articles_test",
-    )
-    tokenize_and_save_bart(
-        data=test_data,
-        column="Summary",
-        n_process=n_process,
-        filename="tokenized_summaries_test",
-    )
-    tokenize_and_save_bart(
-        data=val_data,
-        column="Content",
-        n_process=n_process,
-        filename="tokenized_articles_val",
-    )
-    tokenize_and_save_bart(
-        data=val_data,
-        column="Summary",
-        n_process=n_process,
-        filename="tokenized_summaries_val",
-    )
+    if retrain_model:
+        tokenize_and_save_bart(
+            data=train_data,
+            column="Content",
+            n_process=n_process,
+            filename="tokenized_articles_train",
+        )
+        tokenize_and_save_bart(
+            data=train_data,
+            column="Summary",
+            n_process=n_process,
+            filename="tokenized_summaries_train",
+        )
+        tokenize_and_save_bart(
+            data=val_data,
+            column="Content",
+            n_process=n_process,
+            filename="tokenized_articles_val",
+        )
+        tokenize_and_save_bart(
+            data=val_data,
+            column="Summary",
+            n_process=n_process,
+            filename="tokenized_summaries_val",
+        )
 
-    with warnings.catch_warnings():
-        warnings.simplefilter("ignore")
-        tokenized_articles_train = torch.load("tokenized_articles_train.pt")
-        tokenized_summaries_train = torch.load("tokenized_summaries_train.pt")
-        tokenized_articles_test = torch.load("tokenized_articles_test.pt")
-        tokenized_summaries_test = torch.load("tokenized_summaries_test.pt")
-        tokenized_articles_val = torch.load("tokenized_articles_val.pt")
-        tokenized_summaries_val = torch.load("tokenized_summaries_val.pt")
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            tokenized_articles_train = torch.load("tokenized_articles_train.pt")
+            tokenized_summaries_train = torch.load("tokenized_summaries_train.pt")
+            tokenized_articles_val = torch.load("tokenized_articles_val.pt")
+            tokenized_summaries_val = torch.load("tokenized_summaries_val.pt")
 
-    """
-    Transformer
-    """
+        """
+        Transformer
+        """
 
-    tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
-    vocab_size = len(tokenizer)
+        tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+        vocab_size = len(tokenizer)
 
-    PARAMS_MODEL["voc_size"] = vocab_size
+        PARAMS_MODEL["voc_size"] = vocab_size
 
-    modelTransformer = Transformer(**PARAMS_MODEL)
+        modelTransformer = Transformer(**PARAMS_MODEL)
 
-    dataloader_train = create_dataloader(
-        tokenized_articles=tokenized_articles_train,
-        tokenized_summaries=tokenized_summaries_train,
-        batch_size=BATCH_SIZE,
-        n_process=n_process,
-    )
+        dataloader_train = create_dataloader(
+            tokenized_articles=tokenized_articles_train,
+            tokenized_summaries=tokenized_summaries_train,
+            batch_size=BATCH_SIZE,
+            n_process=n_process,
+        )
 
-    dataloader_val = create_dataloader(
-        tokenized_articles=tokenized_articles_val,
-        tokenized_summaries=tokenized_summaries_val,
-        batch_size=BATCH_SIZE,
-        n_process=n_process,
-    )
+        dataloader_val = create_dataloader(
+            tokenized_articles=tokenized_articles_val,
+            tokenized_summaries=tokenized_summaries_val,
+            batch_size=BATCH_SIZE,
+            n_process=n_process,
+        )
 
-    optimizer = torch.optim.AdamW(
-        modelTransformer.parameters(),
-        lr=LEARNING_RATE,
-        betas=(0.9, 0.98),
-        eps=1e-9,
-        weight_decay=1e-2,
-    )
+        optimizer = torch.optim.AdamW(
+            modelTransformer.parameters(),
+            lr=LEARNING_RATE,
+            betas=(0.9, 0.98),
+            eps=1e-9,
+            weight_decay=1e-2,
+        )
 
-    scheduler = create_scheduler(
-        dataloader=dataloader_train,
-        optimizer=optimizer,
-        n_epochs=N_EPOCHS,
-    )
+        scheduler = create_scheduler(
+            dataloader=dataloader_train,
+            optimizer=optimizer,
+            n_epochs=N_EPOCHS,
+        )
 
-    params_training = {
-        "model": modelTransformer,
-        "train_dataloader": dataloader_train,
-        "val_dataloader": dataloader_val,
-        "num_epochs": N_EPOCHS,
-        "optimizer": optimizer,
-        "scheduler": scheduler,
-        "loss_fn": nn.CrossEntropyLoss(
-            ignore_index=tokenizer.pad_token_id,
-            label_smoothing=0.1,
-        ),
-        "model_name": "Transformer",
-        "device": device,
-        "grad_accum_steps": 1,
-        "use_amp": True,
-        "early_stopping_patience": None,
-    }
+        params_training = {
+            "model": modelTransformer,
+            "train_dataloader": dataloader_train,
+            "val_dataloader": dataloader_val,
+            "num_epochs": N_EPOCHS,
+            "optimizer": optimizer,
+            "scheduler": scheduler,
+            "loss_fn": nn.CrossEntropyLoss(
+                ignore_index=tokenizer.pad_token_id,
+                label_smoothing=0.1,
+            ),
+            "model_name": "Transformer",
+            "device": device,
+            "grad_accum_steps": 1,
+            "use_amp": True,
+            "early_stopping_patience": None,
+        }
 
-    train_model(**params_training)
+        train_model(**params_training)
 
     modelTransformer = Transformer(**PARAMS_MODEL)
 
@@ -226,6 +213,15 @@ if __name__ == "__main__":
     """
     Prediction and evaluation
     """
+
+    tokenize_and_save_bart(
+        data=test_data,
+        column="Content",
+        n_process=n_process,
+        filename="tokenized_articles_test",
+    )
+
+    tokenized_articles_test = torch.load("tokenized_articles_test.pt")
 
     predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,
