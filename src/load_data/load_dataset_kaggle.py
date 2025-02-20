@@ -4,7 +4,7 @@ import pandas as pd
 from src.setup_logger import setup_logger
 
 
-def load_dataset():
+def load_dataset_kaggle():
     """
 
     Download and extract the news summarization dataset from Kaggle, then load it into a pandas DataFrame.
