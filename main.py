@@ -5,6 +5,9 @@ Main python file
 # pip install -r requirements.txt
 # python -m spacy download en_core_web_sm
 
+
+### IMPORTS ###
+
 import warnings
 
 import evaluate
@@ -12,9 +15,10 @@ import pandas as pd
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
-from transformers import BartTokenizer, get_linear_schedule_with_warmup
+from transformers import BartTokenizer
 
 from src.create_dataloader import create_dataloader
+from src.create_scheduler import create_scheduler
 from src.evaluation.model_evaluation import (
     generate_summaries_transformer,
 )
@@ -24,7 +28,7 @@ from src.features.functions_preprocessing import (
     preprocess_articles,
     preprocess_summaries,
 )
-from src.features.tokenization import tokenize_and_save
+from src.features.tokenization import tokenize_and_save_bart
 from src.load_dataset import load_dataset
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
@@ -35,11 +39,22 @@ from src.set_up_config_device import (
 )
 from src.setup_logger import setup_logger
 
+### GLOBAL VARIABLES ###
+
 BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
 N_EPOCHS = 25
 LEARNING_RATE = 2e-4
+PARAMS_MODEL = {
+    "pad_idx": 0,
+    "hidden_size": 512,
+    "n_head": 8,
+    "max_len": 512,
+    "dec_max_len": 150,
+    "ffn_hidden": 2048,
+    "n_layers": 6,
+}
 
 # Initialize logger
 logger = setup_logger()
@@ -92,37 +107,37 @@ logger.info(f"Train size dataset length: {len(train_data)}")
 logger.info(f"Validation size dataset length: {len(val_data)}")
 logger.info(f"Test size dataset length: {len(test_data)}")
 
-tokenize_and_save(
+tokenize_and_save_bart(
     data=train_data,
     column="Content",
     n_process=n_process,
     filename="tokenized_articles_train",
 )
-tokenize_and_save(
+tokenize_and_save_bart(
     data=train_data,
     column="Summary",
     n_process=n_process,
     filename="tokenized_summaries_train",
 )
-tokenize_and_save(
+tokenize_and_save_bart(
     data=test_data,
     column="Content",
     n_process=n_process,
     filename="tokenized_articles_test",
 )
-tokenize_and_save(
+tokenize_and_save_bart(
     data=test_data,
     column="Summary",
     n_process=n_process,
     filename="tokenized_summaries_test",
 )
-tokenize_and_save(
+tokenize_and_save_bart(
     data=val_data,
     column="Content",
     n_process=n_process,
     filename="tokenized_articles_val",
 )
-tokenize_and_save(
+tokenize_and_save_bart(
     data=val_data,
     column="Summary",
     n_process=n_process,
@@ -145,18 +160,9 @@ Transformer
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
 vocab_size = len(tokenizer)
 
-params_model = {
-    "pad_idx": 0,
-    "voc_size": vocab_size,
-    "hidden_size": 512,
-    "n_head": 8,
-    "max_len": 512,
-    "dec_max_len": 150,
-    "ffn_hidden": 2048,
-    "n_layers": 6,
-}
+PARAMS_MODEL["voc_size"] = vocab_size
 
-modelTransformer = Transformer(**params_model)
+modelTransformer = Transformer(**PARAMS_MODEL)
 
 dataloader_train = create_dataloader(
     tokenized_articles=tokenized_articles_train,
@@ -181,11 +187,10 @@ optimizer = torch.optim.AdamW(
     weight_decay=1e-2,
 )
 
-num_train_steps = len(dataloader_train) * N_EPOCHS
-warmup_steps = int(0.1 * num_train_steps)
-
-scheduler = get_linear_schedule_with_warmup(
-    optimizer, num_warmup_steps=warmup_steps, num_training_steps=num_train_steps
+scheduler = create_scheduler(
+    dataloader=dataloader_train,
+    optimizer=optimizer,
+    n_epochs=N_EPOCHS,
 )
 
 params_training = {
@@ -208,7 +213,7 @@ params_training = {
 
 train_model(**params_training)
 
-modelTransformer = Transformer(**params_model)
+modelTransformer = Transformer(**PARAMS_MODEL)
 
 modelTransformer.load_state_dict(
     torch.load("output/model_weights/transformer_weights_25_epochs.pth")
@@ -223,7 +228,7 @@ rouge = evaluate.load("rouge")
 
 predictions_transformer = generate_summaries_transformer(
     model=modelTransformer,
-    batch_size=32,
+    batch_size=BATCH_SIZE,
     tokenized_input=tokenized_articles_test,
     limit=None,
 )
