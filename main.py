@@ -10,7 +10,6 @@ Main python file
 
 import warnings
 
-import evaluate
 import pandas as pd
 import torch
 import torch.nn as nn
@@ -19,9 +18,7 @@ from transformers import BartTokenizer
 
 from src.create_dataloader import create_dataloader
 from src.create_scheduler import create_scheduler
-from src.evaluation.model_evaluation import (
-    generate_summaries_transformer,
-)
+from src.evaluation.model_evaluation import evaluate_model
 from src.features.functions_preprocessing import (
     descriptive_statistics,
     plot_text_length_distribution,
@@ -32,6 +29,7 @@ from src.features.tokenization import tokenize_and_save_bart
 from src.load_dataset import load_dataset
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
+from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.set_up_config_device import (
     get_allowed_cpu_count,
     set_up_config_device,
@@ -221,10 +219,8 @@ modelTransformer.load_state_dict(
 modelTransformer.eval()
 
 """
-Evaluation
+Prediction and evaluation
 """
-
-rouge = evaluate.load("rouge")
 
 predictions_transformer = generate_summaries_transformer(
     model=modelTransformer,
@@ -233,10 +229,4 @@ predictions_transformer = generate_summaries_transformer(
     limit=None,
 )
 
-test_data.loc[:, "predictions_transformer"] = predictions_transformer
-
-reference_summaries = list(test_data["Summary"])
-results = rouge.compute(
-    predictions=predictions_transformer, references=reference_summaries
-)
-logger.info(f"ROUGE metrics: {results}")
+evaluate_model(data=test_data, predictions=predictions_transformer)
