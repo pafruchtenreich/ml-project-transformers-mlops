@@ -16,7 +16,6 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from transformers import BartTokenizer
 
-from load_data.load_data import load_data
 from src.create_dataloader import create_dataloader
 from src.create_scheduler import create_scheduler
 from src.evaluation.model_evaluation import evaluate_model
@@ -25,6 +24,7 @@ from src.features.functions_preprocessing import (
     plot_text_length_distribution,
 )
 from src.features.tokenization import tokenize_and_save_bart
+from src.load_data.load_data import load_data
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
