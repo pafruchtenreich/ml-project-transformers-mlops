@@ -57,10 +57,10 @@ if __name__ == "__main__":
     # Retrieve arguments
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "reload_data", default=False, type=bool, help="Reload data from scracth"
+        "--reload_data", default=False, type=bool, help="Reload data from scracth"
     )
     parser.add_argument(
-        "retrain_model",
+        "--retrain_model",
         default=False,
         type=bool,
         help="Retrain model from default pretrained",
