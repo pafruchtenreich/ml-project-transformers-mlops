@@ -5,6 +5,7 @@ import pandas as pd
 from src.features.functions_preprocessing import (
     preprocess_articles,
     preprocess_summaries,
+    remove_outlier,
 )
 from src.load_data.load_dataset_kaggle import load_dataset_kaggle
 from src.setup_logger import setup_logger
@@ -26,6 +27,15 @@ def load_data(reload_data, n_process, batch_size, filename):
     logger = setup_logger()
     if reload_data:
         news_data = load_dataset_kaggle()
+
+        news_data = remove_outlier(
+            news_data, col="Content", lower_percent=10, upper_percent=90
+        )
+        news_data = remove_outlier(
+            news_data, col="Summary", lower_percent=10, upper_percent=90
+        )
+
+        news_data = news_data.sample(n=1000, random_state=42)  # Remove
 
         news_data.loc[:, "Content"] = preprocess_articles(
             news_data["Content"].tolist(), n_process=n_process, batch_size=batch_size
