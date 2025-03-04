@@ -8,8 +8,9 @@ spacy
 parquet
 evaluate
 rouge_score
-numpy
+numpy==1.25.2
 pandas
 ruff>=0.7.1
 pre-commit
 scikit-learn
+matplotlib
