@@ -24,7 +24,10 @@ from src.features.functions_preprocessing import (
 )
 from src.features.tokenization import tokenize_and_save_bart
 from src.load_data.load_data import load_data
-from src.models.train_models import train_model
+from src.models.train_models import (
+    finetune_model_with_gridsearch_cv,
+    train_model,
+)
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.set_up_config_device import (
@@ -141,6 +144,24 @@ if __name__ == "__main__":
             )
 
         ### TRAINING ###
+
+        BEST_PARAMS = finetune_model_with_gridsearch_cv(
+            Transformer,
+            PARAMS_MODEL,
+            tokenized_articles_train,
+            tokenized_summaries_train,
+            tokenizer,
+            device,
+            k_folds=3,
+            num_epochs=3,
+            batch_size=32,
+            n_process=n_process,
+            seed=42,
+            grad_accum_steps=1,
+            use_amp=True,
+            early_stopping_patience=None,
+        )
+
         modelTransformer = Transformer(**PARAMS_MODEL)
 
         dataloader_train = create_dataloader(
@@ -148,6 +169,7 @@ if __name__ == "__main__":
             tokenized_summaries=tokenized_summaries_train,
             batch_size=BATCH_SIZE,
             n_process=n_process,
+            pad_value=tokenizer.pad_token_id,
         )
 
         dataloader_val = create_dataloader(
@@ -155,14 +177,15 @@ if __name__ == "__main__":
             tokenized_summaries=tokenized_summaries_val,
             batch_size=BATCH_SIZE,
             n_process=n_process,
+            pad_value=tokenizer.pad_token_id,
         )
 
         optimizer = torch.optim.AdamW(
             modelTransformer.parameters(),
-            lr=LEARNING_RATE,
+            lr=BEST_PARAMS["learning_rate"],
             betas=(0.9, 0.98),
             eps=1e-9,
-            weight_decay=1e-2,
+            weight_decay=BEST_PARAMS["weight_decay"],
         )
 
         scheduler = create_scheduler(
@@ -180,7 +203,7 @@ if __name__ == "__main__":
             "scheduler": scheduler,
             "loss_fn": nn.CrossEntropyLoss(
                 ignore_index=tokenizer.pad_token_id,
-                label_smoothing=0.0,
+                label_smoothing=BEST_PARAMS["label_smoothing"],
             ),
             "model_name": "Transformer",
             "device": device,
