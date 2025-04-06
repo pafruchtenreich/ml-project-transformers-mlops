@@ -1,3 +1,5 @@
+s3fs==2025.3.0
+fsspec==2025.3.0
 ipywidgets
 kaggle
 kagglehub
@@ -13,4 +15,3 @@ ruff>=0.7.1
 pre-commit
 scikit-learn
 matplotlib
-fsspec
