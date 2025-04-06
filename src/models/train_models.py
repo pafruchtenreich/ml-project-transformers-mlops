@@ -276,7 +276,7 @@ def finetune_model_with_gridsearch_cv(
 
     # Define a grid of hyperparameters we want to search
     param_grid = {
-        "learning_rate": [5e-5, 1e-4, 3e-4],
+        "learning_rate": [1e-5, 5e-6, 1e-6],
         "weight_decay": [0.0, 1e-2],
         "label_smoothing": [0.0, 0.1],
     }
