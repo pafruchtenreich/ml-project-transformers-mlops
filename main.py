@@ -18,7 +18,6 @@ from transformers import BartTokenizer
 
 from src.create_dataloader import create_dataloader
 from src.create_scheduler import create_scheduler
-from src.evaluation.model_evaluation import evaluate_model
 from src.features.functions_preprocessing import (
     descriptive_statistics,
     plot_text_length_distribution,
@@ -27,7 +26,6 @@ from src.features.tokenization import tokenize_and_save_bart
 from src.load_data.load_data import load_data
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
-from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.set_up_config_device import (
     get_allowed_cpu_count,
     set_up_config_device,
@@ -41,8 +39,8 @@ DATA_FILENAME = "news_data_cleaned.parquet"
 BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
-N_EPOCHS = 5
-LEARNING_RATE = 2e-4
+N_EPOCHS = 3
+LEARNING_RATE = 5e-6
 PARAMS_MODEL = {
     "pad_idx": 0,
     "hidden_size": 512,
@@ -157,9 +155,9 @@ if __name__ == "__main__":
         """
 
         tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
-        vocab_size = len(tokenizer)
 
-        PARAMS_MODEL["voc_size"] = vocab_size
+        PARAMS_MODEL["voc_size"] = len(tokenizer)
+        PARAMS_MODEL["pad_idx"] = tokenizer.pad_token_id
 
         modelTransformer = Transformer(**PARAMS_MODEL)
 
@@ -200,7 +198,7 @@ if __name__ == "__main__":
             "scheduler": scheduler,
             "loss_fn": nn.CrossEntropyLoss(
                 ignore_index=tokenizer.pad_token_id,
-                label_smoothing=0.1,
+                label_smoothing=0.0,
             ),
             "model_name": "Transformer",
             "device": device,
@@ -213,29 +211,29 @@ if __name__ == "__main__":
 
     modelTransformer = Transformer(**PARAMS_MODEL)
 
-    modelTransformer.load_state_dict(
+"""         modelTransformer.load_state_dict(
         torch.load("output/model_weights/transformer_weights_25_epochs.pth")
-    )
-    modelTransformer.eval()
+        )
+        modelTransformer.eval()
 
-    """
-    Prediction and evaluation
-    """
+        """
+"""         Prediction and evaluation
+ """ """
 
-    tokenize_and_save_bart(
+        tokenize_and_save_bart(
         data=test_data,
         column="Content",
         n_process=n_process,
         filename="tokenized_articles_test",
-    )
+        )
 
-    tokenized_articles_test = torch.load("tokenized_articles_test.pt")
+        tokenized_articles_test = torch.load("tokenized_articles_test.pt")
 
-    predictions_transformer = generate_summaries_transformer(
+        predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,
         batch_size=BATCH_SIZE,
         tokenized_input=tokenized_articles_test,
         limit=None,
-    )
+        )
 
-    evaluate_model(data=test_data, predictions=predictions_transformer)
+        evaluate_model(data=test_data, predictions=predictions_transformer) """
