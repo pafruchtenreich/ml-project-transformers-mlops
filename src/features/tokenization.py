@@ -1,3 +1,4 @@
+import os
 from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
@@ -55,6 +56,12 @@ def tokenize_and_save_bart(
     filename: str,
 ):
     logger = setup_logger()
+
+    output_dir = "output/token"
+    os.makedirs(output_dir, exist_ok=True)
+
+    filepath = os.path.join(output_dir, f"{filename}.pt")
+
     texts = list(data[column])
     max_length = 512 if column == "Content" else 128  # for shorter summaries
 
@@ -65,5 +72,5 @@ def tokenize_and_save_bart(
         chunk_size=2000,
         max_length=max_length,
     )
-    logger.info(f"{filename}.shape = {tokenized_data.shape}")
-    torch.save(tokenized_data, f"{filename}.pt")
+    logger.info(f"{filepath}.shape = {tokenized_data.shape}")
+    torch.save(tokenized_data, filepath)
