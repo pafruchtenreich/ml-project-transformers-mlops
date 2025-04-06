@@ -1,6 +1,4 @@
-"""
-Main python file
-"""
+### MAIN SCRIPT ###
 
 # pip install -r requirements.txt
 # python -m spacy download en_core_web_sm
@@ -36,6 +34,9 @@ from src.set_up_config_device import (
 )
 from src.setup_logger import setup_logger
 
+tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+
+
 ### GLOBAL VARIABLES ###
 
 DATA_FILENAME = "news_data_cleaned.parquet"
@@ -45,17 +46,19 @@ VAL_RATIO = 0.5
 N_EPOCHS = 3
 LEARNING_RATE = 5e-6
 PARAMS_MODEL = {
-    "pad_idx": 0,
+    "pad_idx": tokenizer.pad_token_id,
     "hidden_size": 512,
     "n_head": 8,
     "max_len": 512,
     "dec_max_len": 150,
     "ffn_hidden": 2048,
     "n_layers": 6,
+    "voc_size": len(tokenizer),
 }
 
+
 if __name__ == "__main__":
-    # Retrieve arguments
+    ### ARGUMENT PARSING ###
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--reload_data", default=False, type=bool, help="Reload data from scracth"
@@ -70,16 +73,13 @@ if __name__ == "__main__":
     reload_data = args.reload_data
     retrain_model = args.retrain_model
 
-    # Initialize logger
+    ### LOGGER AND DEVICE SETUP ###
     logger = setup_logger()
-
     device = set_up_device()
-
     cpu_count = get_allowed_cpu_count()
-
     n_process = set_up_config_device(cpu_count)
 
-    # Load dataset
+    ### LOAD DATA ###
     news_data = load_data(
         reload_data=reload_data,
         n_process=n_process,
@@ -87,20 +87,14 @@ if __name__ == "__main__":
         filename=DATA_FILENAME,
     )
 
-    # Descriptive statistics
+    ### DESCRIPTIVE STATISTICS ###
     descriptive_statistics(data=news_data, column_name="Content")
     descriptive_statistics(data=news_data, column_name="Summary")
 
     plot_text_length_distribution(data=news_data, column_name="Content")
     plot_text_length_distribution(data=news_data, column_name="Summary")
 
-    """
-    Tokenization
-
-    We shuffle the dataset, split it into training and testing sets with an 80-20 ratio,
-    and print the sizes of both subsets.
-    """
-
+    ### TOKENIZATION AND DATA SPLIT ###
     train_data, temp_data = train_test_split(
         news_data, test_size=TEST_RATIO, random_state=42, shuffle=True
     )
@@ -113,6 +107,7 @@ if __name__ == "__main__":
     logger.info(f"Test size dataset length: {len(test_data)}")
 
     if retrain_model:
+        ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
         files = {
             "tokenized_articles_train": (train_data, "Content"),
             "tokenized_summaries_train": (train_data, "Summary"),
@@ -145,15 +140,7 @@ if __name__ == "__main__":
                 "output/token/tokenized_summaries_val.pt"
             )
 
-        """
-        Transformer
-        """
-
-        tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
-
-        PARAMS_MODEL["voc_size"] = len(tokenizer)
-        PARAMS_MODEL["pad_idx"] = tokenizer.pad_token_id
-
+        ### TRAINING ###
         modelTransformer = Transformer(**PARAMS_MODEL)
 
         dataloader_train = create_dataloader(
@@ -205,6 +192,7 @@ if __name__ == "__main__":
 
         train_model(**params_training)
 
+    ### LOAD TRAINED MODEL ###
     modelTransformer = Transformer(**PARAMS_MODEL)
 
     modelTransformer.load_state_dict(
@@ -212,10 +200,7 @@ if __name__ == "__main__":
     )
     modelTransformer.eval()
 
-    """
-        Prediction and evaluation
-        """
-
+    ### PREDICTION AND EVALUATION ###
     tokenize_and_save_bart(
         data=test_data,
         column="Content",
@@ -223,7 +208,7 @@ if __name__ == "__main__":
         filename="tokenized_articles_test",
     )
 
-    tokenized_articles_test = torch.load("tokenized_articles_test.pt")
+    tokenized_articles_test = torch.load("output/token/tokenized_articles_test.pt")
 
     predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,
