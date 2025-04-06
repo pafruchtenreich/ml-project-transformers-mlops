@@ -1,4 +1,3 @@
-import copy
 import time
 
 import numpy as np
@@ -322,8 +321,7 @@ def finetune_model_with_gridsearch_cv(
             )
 
             # Build a fresh model
-            model_params = copy.deepcopy(base_params_model)
-            model = model_class(**model_params)
+            model = model_class(**base_params_model)
 
             # Extract hyperparams from combo
             learning_rate = combo["learning_rate"]
