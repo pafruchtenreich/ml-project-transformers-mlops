@@ -9,6 +9,7 @@ Main python file
 ### IMPORTS ###
 
 import argparse
+import os
 import warnings
 
 import torch
@@ -110,30 +111,22 @@ if __name__ == "__main__":
     logger.info(f"Test size dataset length: {len(test_data)}")
 
     if retrain_model:
-        tokenize_and_save_bart(
-            data=train_data,
-            column="Content",
-            n_process=n_process,
-            filename="tokenized_articles_train",
-        )
-        tokenize_and_save_bart(
-            data=train_data,
-            column="Summary",
-            n_process=n_process,
-            filename="tokenized_summaries_train",
-        )
-        tokenize_and_save_bart(
-            data=val_data,
-            column="Content",
-            n_process=n_process,
-            filename="tokenized_articles_val",
-        )
-        tokenize_and_save_bart(
-            data=val_data,
-            column="Summary",
-            n_process=n_process,
-            filename="tokenized_summaries_val",
-        )
+        files = {
+            "tokenized_articles_train": (train_data, "Content"),
+            "tokenized_summaries_train": (train_data, "Summary"),
+            "tokenized_articles_val": (val_data, "Content"),
+            "tokenized_summaries_val": (val_data, "Summary"),
+        }
+
+        for filename, (df, column) in files.items():
+            path = os.path.join("output", "token", f"{filename}.pt")
+            if not os.path.exists(path):
+                tokenize_and_save_bart(
+                    data=df,
+                    column=column,
+                    n_process=n_process,
+                    filename=filename,
+                )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
