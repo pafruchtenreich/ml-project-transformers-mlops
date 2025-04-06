@@ -19,6 +19,7 @@ from transformers import BartTokenizer
 
 from src.create_dataloader import create_dataloader
 from src.create_scheduler import create_scheduler
+from src.evaluation.model_evaluation import evaluate_model
 from src.features.functions_preprocessing import (
     descriptive_statistics,
     plot_text_length_distribution,
@@ -27,6 +28,7 @@ from src.features.tokenization import tokenize_and_save_bart
 from src.load_data.load_data import load_data
 from src.models.train_models import train_model
 from src.models.transformer import Transformer
+from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.set_up_config_device import (
     get_allowed_cpu_count,
     set_up_config_device,
@@ -205,29 +207,29 @@ if __name__ == "__main__":
 
     modelTransformer = Transformer(**PARAMS_MODEL)
 
-"""         modelTransformer.load_state_dict(
-        torch.load("output/model_weights/transformer_weights_25_epochs.pth")
-        )
-        modelTransformer.eval()
+    modelTransformer.load_state_dict(
+        torch.load(f"output/model_weights/transformer_weights_{N_EPOCHS}_epochs.pth")
+    )
+    modelTransformer.eval()
 
+    """
+        Prediction and evaluation
         """
-"""         Prediction and evaluation
- """ """
 
-        tokenize_and_save_bart(
+    tokenize_and_save_bart(
         data=test_data,
         column="Content",
         n_process=n_process,
         filename="tokenized_articles_test",
-        )
+    )
 
-        tokenized_articles_test = torch.load("tokenized_articles_test.pt")
+    tokenized_articles_test = torch.load("tokenized_articles_test.pt")
 
-        predictions_transformer = generate_summaries_transformer(
+    predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,
         batch_size=BATCH_SIZE,
         tokenized_input=tokenized_articles_test,
         limit=None,
-        )
+    )
 
-        evaluate_model(data=test_data, predictions=predictions_transformer) """
+    evaluate_model(data=test_data, predictions=predictions_transformer)
