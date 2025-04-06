@@ -107,9 +107,6 @@ def train_model(
             # Gradient Accumulation
             # ---------------------
 
-            # Update scheduler
-            scheduler.step()
-
             if (step + 1) % grad_accum_steps == 0:
                 # Gradient clipping
                 if use_amp:
@@ -124,6 +121,9 @@ def train_model(
                     scaler.update()
                 else:
                     optimizer.step()
+
+                # Update scheduler
+                scheduler.step()
 
                 # Reset gradients
                 optimizer.zero_grad()
