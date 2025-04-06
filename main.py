@@ -41,7 +41,7 @@ DATA_FILENAME = "news_data_cleaned.parquet"
 BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
-N_EPOCHS = 25
+N_EPOCHS = 5
 LEARNING_RATE = 2e-4
 PARAMS_MODEL = {
     "pad_idx": 0,
