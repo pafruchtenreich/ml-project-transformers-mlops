@@ -195,6 +195,7 @@ if __name__ == "__main__":
             ),
             "model_name": "Transformer",
             "device": device,
+            "save_weights": True,
             "grad_accum_steps": 1,
             "use_amp": True,
             "early_stopping_patience": None,

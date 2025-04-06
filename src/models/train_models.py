@@ -21,6 +21,7 @@ def train_model(
     loss_fn,
     model_name,
     device,
+    save_weights=True,
     grad_accum_steps=1,
     use_amp=False,
     early_stopping_patience=None,
@@ -190,13 +191,14 @@ def train_model(
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             no_improvement_epochs = 0
-            torch.save(
-                model.state_dict(),
-                f"output/model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
-            )
-            logger.info(
-                f"Best model saved at epoch {epoch+1} with val loss {avg_val_loss:.4f}"
-            )
+            if save_weights:
+                torch.save(
+                    model.state_dict(),
+                    f"output/model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
+                )
+                logger.info(
+                    f"Best model saved at epoch {epoch+1} with val loss {avg_val_loss:.4f}"
+                )
         else:
             no_improvement_epochs += 1
 
@@ -356,6 +358,7 @@ def finetune_model_with_gridsearch_cv(
                 loss_fn=loss_fn,
                 model_name="Transformer",
                 device=device,
+                save_weights=False,
                 grad_accum_steps=grad_accum_steps,
                 use_amp=use_amp,
                 early_stopping_patience=early_stopping_patience,
