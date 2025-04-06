@@ -47,7 +47,6 @@ BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
 N_EPOCHS = 3
-LEARNING_RATE = 5e-6
 PARAMS_MODEL = {
     "pad_idx": tokenizer.pad_token_id,
     "hidden_size": 512,
@@ -144,7 +143,6 @@ if __name__ == "__main__":
             )
 
         ### TRAINING ###
-
         BEST_PARAMS = finetune_model_with_gridsearch_cv(
             Transformer,
             PARAMS_MODEL,
