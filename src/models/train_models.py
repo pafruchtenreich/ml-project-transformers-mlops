@@ -154,7 +154,7 @@ def train_model(
                 summary_batch = summary_batch.to(device)
 
                 if use_amp:
-                    with torch.cuda.amp.autocast(device):
+                    with torch.amp.autocast(device):
                         outputs = model(input_batch.long(), summary_batch[:, :-1])
                         shifted_target = summary_batch[:, 1:]
                         val_loss = loss_fn(
