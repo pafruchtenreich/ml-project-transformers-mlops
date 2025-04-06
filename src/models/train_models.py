@@ -4,7 +4,7 @@ import time
 import numpy as np
 import torch
 from sklearn.model_selection import KFold, ParameterGrid
-from torch.cuda.amp import GradScaler, autocast
+from torch.cuda.amp import autocast
 from tqdm import tqdm
 
 from src.create_dataloader import create_dataloader
@@ -49,7 +49,7 @@ def train_model(
     logger = setup_logger()
     model.to(device)
 
-    scaler = GradScaler() if use_amp else None
+    scaler = torch.amp.GradScaler(device) if use_amp else None
 
     total_start_time = time.time()
     best_val_loss = float("inf")
@@ -78,7 +78,7 @@ def train_model(
             # Forward + Backward
             # ---------------------
             if use_amp:
-                with autocast():
+                with torch.amp.autocast(device):
                     outputs = model(input_batch.long(), summary_batch[:, :-1])
                     shifted_target = summary_batch[:, 1:]
                     loss = loss_fn(
