@@ -139,10 +139,18 @@ if __name__ == "__main__":
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            tokenized_articles_train = torch.load("tokenized_articles_train.pt")
-            tokenized_summaries_train = torch.load("tokenized_summaries_train.pt")
-            tokenized_articles_val = torch.load("tokenized_articles_val.pt")
-            tokenized_summaries_val = torch.load("tokenized_summaries_val.pt")
+            tokenized_articles_train = torch.load(
+                "output/token/tokenized_articles_train.pt"
+            )
+            tokenized_summaries_train = torch.load(
+                "output/token/tokenized_summaries_train.pt"
+            )
+            tokenized_articles_val = torch.load(
+                "output/token/tokenized_articles_val.pt"
+            )
+            tokenized_summaries_val = torch.load(
+                "output/token/tokenized_summaries_val.pt"
+            )
 
         """
         Transformer
