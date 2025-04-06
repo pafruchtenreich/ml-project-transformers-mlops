@@ -34,7 +34,7 @@ class AttentionLayer(nn.Module):
 
         if mask is not None:
             # mask shape must be broadcastable to (batch_size, n_head, seq_len, seq_len)
-            scores = scores.masked_fill(mask == 0, -1e9)
+            scores = scores.masked_fill(mask == 0, -1e4)
 
         attn = F.softmax(scores, dim=-1)
         out = attn @ v
