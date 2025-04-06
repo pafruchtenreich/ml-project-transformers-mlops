@@ -231,8 +231,8 @@ def finetune_model_with_gridsearch_cv(
     tokenizer,
     device,
     k_folds=3,
-    num_epochs=10,
-    batch_size=8,
+    num_epochs=3,
+    batch_size=32,
     n_process=1,
     seed=42,
     grad_accum_steps=1,
@@ -271,7 +271,7 @@ def finetune_model_with_gridsearch_cv(
     logger = setup_logger()
     np.random.seed(seed)
     torch.manual_seed(seed)
-    if device.type == "cuda":
+    if device == "cuda":
         torch.cuda.manual_seed_all(seed)
 
     # Define a grid of hyperparameters we want to search
