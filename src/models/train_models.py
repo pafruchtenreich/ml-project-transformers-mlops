@@ -4,7 +4,6 @@ import time
 import numpy as np
 import torch
 from sklearn.model_selection import KFold, ParameterGrid
-from torch.cuda.amp import autocast
 from tqdm import tqdm
 
 from src.create_dataloader import create_dataloader
@@ -107,6 +106,10 @@ def train_model(
             # ---------------------
             # Gradient Accumulation
             # ---------------------
+
+            # Update scheduler
+            scheduler.step()
+
             if (step + 1) % grad_accum_steps == 0:
                 # Gradient clipping
                 if use_amp:
@@ -121,9 +124,6 @@ def train_model(
                     scaler.update()
                 else:
                     optimizer.step()
-
-                # Update scheduler
-                scheduler.step()
 
                 # Reset gradients
                 optimizer.zero_grad()
@@ -154,7 +154,7 @@ def train_model(
                 summary_batch = summary_batch.to(device)
 
                 if use_amp:
-                    with autocast():
+                    with torch.cuda.amp.autocast(device):
                         outputs = model(input_batch.long(), summary_batch[:, :-1])
                         shifted_target = summary_batch[:, 1:]
                         val_loss = loss_fn(
