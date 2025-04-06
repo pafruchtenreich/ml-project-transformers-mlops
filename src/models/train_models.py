@@ -192,7 +192,7 @@ def train_model(
             no_improvement_epochs = 0
             torch.save(
                 model.state_dict(),
-                f"model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
+                f"output/model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
             )
             logger.info(
                 f"Best model saved at epoch {epoch+1} with val loss {avg_val_loss:.4f}"
