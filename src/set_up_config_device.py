@@ -7,7 +7,7 @@ from src.setup_logger import setup_logger
 
 def set_up_device():
     """
-    Set up the device to use for the model.
+    Sets up the device to use for the model.
 
     Parameters:
     -None
@@ -48,7 +48,7 @@ def get_allowed_cpu_count() -> int:
 
 def set_up_config_device(cpu_count: int) -> int:
     """
-    Set up the configuration for the device and the number of CPUs to use.
+    Sets up the configuration for the device and the number of CPUs to use.
 
     Parameters:
     - cpu_count (int): The number of CPUs to use.

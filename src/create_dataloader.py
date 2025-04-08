@@ -7,7 +7,7 @@ def create_dataloader(
     tokenized_articles, tokenized_summaries, batch_size, n_process, pad_value=0
 ):
     """
-    Create a DataLoader object from tokenized articles and summaries.
+    Creates a DataLoader object from tokenized articles and summaries.
     Supports both padded tensors and raw token ID lists.
 
     Parameters:

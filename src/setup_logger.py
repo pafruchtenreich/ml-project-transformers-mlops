@@ -5,7 +5,7 @@ from datetime import datetime
 
 def setup_logger():
     """
-    Set up a timestamped logger that logs to both a file and the console and return it.
+    Sets up a timestamped logger that logs to both a file and the console and returns it.
 
     Parameters:
     -None
