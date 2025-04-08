@@ -46,6 +46,97 @@ The model was trained on an NVIDIA A100 GPU with 40 GB of high-bandwidth memory 
 |------------------------------|---------|---------|---------|------------------|---------|
 | Transformer                  | 0.20    | 0.04    | 0.15    | ~ $1.6 \times 10^4$ s (25) | $1.25 \times 10^7$  |
 
+
+## Repository structure
+
+
+
+```mermaid
+flowchart TD
+    subgraph "Layer 1: Main"
+        A["main.py"]:::main
+    end
+
+    subgraph "Utilities"
+        L["set_up_config_device.py"]:::utility
+        M["setup_logger.py"]:::utility
+    end
+
+    subgraph "Layer 2: Data Ingestion & Loading"
+        B["load_data.py"]:::data
+        C["load_dataset_kaggle.py"]:::data
+    end
+
+    subgraph "Layer 3: Data Preprocessing & Feature Engineering"
+        D["functions_preprocessing.py"]:::data
+        E["tokenization.py"]:::data
+    end
+
+    subgraph "Layer 4: Data Preparation Utilities"
+        F["create_dataloader.py"]:::data
+        G["create_scheduler.py"]:::data
+    end
+
+    subgraph "Layer 5: Model Building & Training"
+        H["transformer.py"]:::model
+        I["train_models.py"]:::model
+    end
+
+    subgraph "Layer 6: Evaluation"
+        J["model_evaluation.py"]:::evaluation
+    end
+
+    subgraph "Layer 7: Prediction/Inference"
+        K["generate_summaries_transformer.py"]:::prediction
+    end
+
+    subgraph "Layer 8: Output Storage"
+        N["Output: model_predictions"]:::output
+    end
+
+    %% Connections
+    A -->|"triggers"| B
+    A -->|"triggers"| C
+    A -->|"configures"| L
+    A -->|"configures"| M
+    B -->|"feeds data"| D
+    C -->|"feeds data"| E
+    D -->|"prepares"| F
+    E -->|"prepares"| G
+    F -->|"batches"| H
+    G -->|"schedules"| I
+    H -->|"defined in"| I
+    I -->|"trains model"| J
+    J -->|"evaluates"| K
+    K -->|"outputs"| N
+    J -.->|"feedback"| I
+
+    %% Click Events
+    click A "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/main.py"
+    click B "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/load_data/load_data.py"
+    click C "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/load_data/load_dataset_kaggle.py"
+    click D "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/features/functions_preprocessing.py"
+    click E "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/features/tokenization.py"
+    click F "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/create_dataloader.py"
+    click G "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/create_scheduler.py"
+    click H "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/models/transformer.py"
+    click I "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/models/train_models.py"
+    click J "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/evaluation/model_evaluation.py"
+    click K "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/prediction/generate_summaries_transformer.py"
+    click L "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/set_up_config_device.py"
+    click M "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/setup_logger.py"
+    click N "https://github.com/pafruchtenreich/ml-project-transformers-mlops/tree/master/output/model_predictions"
+
+    %% Styles
+    classDef main fill:#d3d3d3,stroke:#333,stroke-width:2px;
+    classDef data fill:#ADD8E6,stroke:#000,stroke-width:1px;
+    classDef model fill:#90EE90,stroke:#000,stroke-width:1px;
+    classDef evaluation fill:#FFF3CD,stroke:#000,stroke-width:1px;
+    classDef prediction fill:#F8D7DA,stroke:#000,stroke-width:1px;
+    classDef utility fill:#E2D4F0,stroke:#000,stroke-width:1px;
+    classDef output fill:#F0F0F0,stroke:#000,stroke-width:1px;
+```
+
 ## Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
