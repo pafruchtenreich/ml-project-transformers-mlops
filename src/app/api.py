@@ -1,4 +1,4 @@
-import torch
+# import torch
 from fastapi import FastAPI, HTTPException
 from transformers import BartTokenizer
 
@@ -23,9 +23,9 @@ PARAMS_MODEL = {
 }
 
 modelTransformer = Transformer(**PARAMS_MODEL)
-modelTransformer.load_state_dict(
-    torch.load("output/model_weights/transformer_weights_3_epochs.pth")
-)
+# modelTransformer.load_state_dict(
+# torch.load("output/model_weights/transformer_weights_3_epochs.pth")
+# )
 modelTransformer.eval()
 
 
@@ -42,7 +42,7 @@ def show_welcome_page():
     }
 
 
-@app.post("/summarize/", tags=["Summarize"])
+@app.get("/summarize/", tags=["Summarize"])
 async def summarize_article(article: str):
     """
     Endpoint to summarize an article.
