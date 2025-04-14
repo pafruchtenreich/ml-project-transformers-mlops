@@ -1,4 +1,5 @@
-from concurrent.futures import ProcessPoolExecutor
+import os
+from concurrent.futures import ThreadPoolExecutor
 from functools import partial
 
 import pandas as pd
@@ -40,7 +41,7 @@ def parallel_tokenize_bart(
     )
 
     results = []
-    with ProcessPoolExecutor(max_workers=max_workers) as executor:
+    with ThreadPoolExecutor(max_workers=max_workers) as executor:
         for tokenized_ids in executor.map(tokenize_fn, chunks):
             results.append(tokenized_ids)
 
@@ -55,8 +56,13 @@ def tokenize_and_save_bart(
     filename: str,
 ):
     logger = setup_logger()
+
+    output_dir = "output/token"
+    os.makedirs(output_dir, exist_ok=True)
+
+    filepath = os.path.join(output_dir, f"{filename}.pt")
+
     texts = list(data[column])
-    # Typically for news summarization, you might still do 512 for "Content"
     max_length = 512 if column == "Content" else 128  # for shorter summaries
 
     tokenized_data = parallel_tokenize_bart(
@@ -66,5 +72,5 @@ def tokenize_and_save_bart(
         chunk_size=2000,
         max_length=max_length,
     )
-    logger.info(f"{filename}.shape = {tokenized_data.shape}")
-    torch.save(tokenized_data, f"{filename}.pt")
+    logger.info(f"{filepath}.shape = {tokenized_data.shape}")
+    torch.save(tokenized_data, filepath)

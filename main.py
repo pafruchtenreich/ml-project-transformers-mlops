@@ -1,6 +1,4 @@
-"""
-Main python file
-"""
+### MAIN SCRIPT ###
 
 # pip install -r requirements.txt
 # python -m spacy download en_core_web_sm
@@ -9,6 +7,7 @@ Main python file
 ### IMPORTS ###
 
 import argparse
+import os
 import warnings
 
 import torch
@@ -25,7 +24,10 @@ from src.features.functions_preprocessing import (
 )
 from src.features.tokenization import tokenize_and_save_bart
 from src.load_data.load_data import load_data
-from src.models.train_models import train_model
+from src.models.train_models import (
+    finetune_model_with_gridsearch_cv,
+    train_model,
+)
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.set_up_config_device import (
@@ -35,26 +37,30 @@ from src.set_up_config_device import (
 )
 from src.setup_logger import setup_logger
 
+tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
+
+
 ### GLOBAL VARIABLES ###
 
 DATA_FILENAME = "news_data_cleaned.parquet"
 BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
-N_EPOCHS = 25
-LEARNING_RATE = 2e-4
+N_EPOCHS = 3
 PARAMS_MODEL = {
-    "pad_idx": 0,
+    "pad_idx": tokenizer.pad_token_id,
     "hidden_size": 512,
     "n_head": 8,
     "max_len": 512,
     "dec_max_len": 150,
     "ffn_hidden": 2048,
     "n_layers": 6,
+    "voc_size": len(tokenizer),
 }
 
+
 if __name__ == "__main__":
-    # Retrieve arguments
+    ### ARGUMENT PARSING ###
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--reload_data", default=False, type=bool, help="Reload data from scracth"
@@ -69,16 +75,13 @@ if __name__ == "__main__":
     reload_data = args.reload_data
     retrain_model = args.retrain_model
 
-    # Initialize logger
+    ### LOGGER AND DEVICE SETUP ###
     logger = setup_logger()
-
     device = set_up_device()
-
     cpu_count = get_allowed_cpu_count()
-
     n_process = set_up_config_device(cpu_count)
 
-    # Load dataset
+    ### LOAD DATA ###
     news_data = load_data(
         reload_data=reload_data,
         n_process=n_process,
@@ -86,20 +89,14 @@ if __name__ == "__main__":
         filename=DATA_FILENAME,
     )
 
-    # Descriptive statistics
+    ### DESCRIPTIVE STATISTICS ###
     descriptive_statistics(data=news_data, column_name="Content")
     descriptive_statistics(data=news_data, column_name="Summary")
 
     plot_text_length_distribution(data=news_data, column_name="Content")
     plot_text_length_distribution(data=news_data, column_name="Summary")
 
-    """
-    Tokenization
-
-    We shuffle the dataset, split it into training and testing sets with an 80-20 ratio,
-    and print the sizes of both subsets.
-    """
-
+    ### TOKENIZATION AND DATA SPLIT ###
     train_data, temp_data = train_test_split(
         news_data, test_size=TEST_RATIO, random_state=42, shuffle=True
     )
@@ -112,46 +109,56 @@ if __name__ == "__main__":
     logger.info(f"Test size dataset length: {len(test_data)}")
 
     if retrain_model:
-        tokenize_and_save_bart(
-            data=train_data,
-            column="Content",
-            n_process=n_process,
-            filename="tokenized_articles_train",
-        )
-        tokenize_and_save_bart(
-            data=train_data,
-            column="Summary",
-            n_process=n_process,
-            filename="tokenized_summaries_train",
-        )
-        tokenize_and_save_bart(
-            data=val_data,
-            column="Content",
-            n_process=n_process,
-            filename="tokenized_articles_val",
-        )
-        tokenize_and_save_bart(
-            data=val_data,
-            column="Summary",
-            n_process=n_process,
-            filename="tokenized_summaries_val",
-        )
+        ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
+        files = {
+            "tokenized_articles_train": (train_data, "Content"),
+            "tokenized_summaries_train": (train_data, "Summary"),
+            "tokenized_articles_val": (val_data, "Content"),
+            "tokenized_summaries_val": (val_data, "Summary"),
+        }
+
+        for filename, (df, column) in files.items():
+            path = os.path.join("output", "token", f"{filename}.pt")
+            if not os.path.exists(path):
+                tokenize_and_save_bart(
+                    data=df,
+                    column=column,
+                    n_process=n_process,
+                    filename=filename,
+                )
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            tokenized_articles_train = torch.load("tokenized_articles_train.pt")
-            tokenized_summaries_train = torch.load("tokenized_summaries_train.pt")
-            tokenized_articles_val = torch.load("tokenized_articles_val.pt")
-            tokenized_summaries_val = torch.load("tokenized_summaries_val.pt")
+            tokenized_articles_train = torch.load(
+                "output/token/tokenized_articles_train.pt"
+            )
+            tokenized_summaries_train = torch.load(
+                "output/token/tokenized_summaries_train.pt"
+            )
+            tokenized_articles_val = torch.load(
+                "output/token/tokenized_articles_val.pt"
+            )
+            tokenized_summaries_val = torch.load(
+                "output/token/tokenized_summaries_val.pt"
+            )
 
-        """
-        Transformer
-        """
-
-        tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
-        vocab_size = len(tokenizer)
-
-        PARAMS_MODEL["voc_size"] = vocab_size
+        ### TRAINING ###
+        BEST_PARAMS = finetune_model_with_gridsearch_cv(
+            Transformer,
+            PARAMS_MODEL,
+            tokenized_articles_train,
+            tokenized_summaries_train,
+            tokenizer,
+            device,
+            k_folds=3,
+            num_epochs=3,
+            batch_size=32,
+            n_process=n_process,
+            seed=42,
+            grad_accum_steps=1,
+            use_amp=True,
+            early_stopping_patience=None,
+        )
 
         modelTransformer = Transformer(**PARAMS_MODEL)
 
@@ -160,6 +167,7 @@ if __name__ == "__main__":
             tokenized_summaries=tokenized_summaries_train,
             batch_size=BATCH_SIZE,
             n_process=n_process,
+            pad_value=tokenizer.pad_token_id,
         )
 
         dataloader_val = create_dataloader(
@@ -167,14 +175,15 @@ if __name__ == "__main__":
             tokenized_summaries=tokenized_summaries_val,
             batch_size=BATCH_SIZE,
             n_process=n_process,
+            pad_value=tokenizer.pad_token_id,
         )
 
         optimizer = torch.optim.AdamW(
             modelTransformer.parameters(),
-            lr=LEARNING_RATE,
+            lr=BEST_PARAMS["learning_rate"],
             betas=(0.9, 0.98),
             eps=1e-9,
-            weight_decay=1e-2,
+            weight_decay=BEST_PARAMS["weight_decay"],
         )
 
         scheduler = create_scheduler(
@@ -192,10 +201,11 @@ if __name__ == "__main__":
             "scheduler": scheduler,
             "loss_fn": nn.CrossEntropyLoss(
                 ignore_index=tokenizer.pad_token_id,
-                label_smoothing=0.1,
+                label_smoothing=BEST_PARAMS["label_smoothing"],
             ),
             "model_name": "Transformer",
             "device": device,
+            "save_weights": True,
             "grad_accum_steps": 1,
             "use_amp": True,
             "early_stopping_patience": None,
@@ -203,17 +213,15 @@ if __name__ == "__main__":
 
         train_model(**params_training)
 
+    ### LOAD TRAINED MODEL ###
     modelTransformer = Transformer(**PARAMS_MODEL)
 
     modelTransformer.load_state_dict(
-        torch.load("output/model_weights/transformer_weights_25_epochs.pth")
+        torch.load(f"output/model_weights/transformer_weights_{N_EPOCHS}_epochs.pth")
     )
     modelTransformer.eval()
 
-    """
-    Prediction and evaluation
-    """
-
+    ### PREDICTION AND EVALUATION ###
     tokenize_and_save_bart(
         data=test_data,
         column="Content",
@@ -221,7 +229,7 @@ if __name__ == "__main__":
         filename="tokenized_articles_test",
     )
 
-    tokenized_articles_test = torch.load("tokenized_articles_test.pt")
+    tokenized_articles_test = torch.load("output/token/tokenized_articles_test.pt")
 
     predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,

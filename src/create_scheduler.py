@@ -3,7 +3,7 @@ from transformers import get_linear_schedule_with_warmup
 
 def create_scheduler(dataloader, optimizer, n_epochs):
     """
-    Create a scheduler for the optimizer.
+    Creates a scheduler for the optimizer.
 
     Parameters:
     - dataloader: DataLoader that contains training data

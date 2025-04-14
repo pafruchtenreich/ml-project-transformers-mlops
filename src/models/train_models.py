@@ -1,10 +1,8 @@
-import copy
 import time
 
 import numpy as np
 import torch
 from sklearn.model_selection import KFold, ParameterGrid
-from torch.cuda.amp import GradScaler, autocast
 from tqdm import tqdm
 
 from src.create_dataloader import create_dataloader
@@ -22,6 +20,7 @@ def train_model(
     loss_fn,
     model_name,
     device,
+    save_weights=True,
     grad_accum_steps=1,
     use_amp=False,
     early_stopping_patience=None,
@@ -49,7 +48,7 @@ def train_model(
     logger = setup_logger()
     model.to(device)
 
-    scaler = GradScaler() if use_amp else None
+    scaler = torch.amp.GradScaler(device) if use_amp else None
 
     total_start_time = time.time()
     best_val_loss = float("inf")
@@ -78,7 +77,7 @@ def train_model(
             # Forward + Backward
             # ---------------------
             if use_amp:
-                with autocast():
+                with torch.amp.autocast(device):
                     outputs = model(input_batch.long(), summary_batch[:, :-1])
                     shifted_target = summary_batch[:, 1:]
                     loss = loss_fn(
@@ -107,6 +106,7 @@ def train_model(
             # ---------------------
             # Gradient Accumulation
             # ---------------------
+
             if (step + 1) % grad_accum_steps == 0:
                 # Gradient clipping
                 if use_amp:
@@ -154,7 +154,7 @@ def train_model(
                 summary_batch = summary_batch.to(device)
 
                 if use_amp:
-                    with autocast():
+                    with torch.amp.autocast(device):
                         outputs = model(input_batch.long(), summary_batch[:, :-1])
                         shifted_target = summary_batch[:, 1:]
                         val_loss = loss_fn(
@@ -190,13 +190,14 @@ def train_model(
         if avg_val_loss < best_val_loss:
             best_val_loss = avg_val_loss
             no_improvement_epochs = 0
-            torch.save(
-                model.state_dict(),
-                f"model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
-            )
-            logger.info(
-                f"Best model saved at epoch {epoch+1} with val loss {avg_val_loss:.4f}"
-            )
+            if save_weights:
+                torch.save(
+                    model.state_dict(),
+                    f"output/model_weights/{model_name.lower()}_weights_{epoch + 1}_epochs.pth",
+                )
+                logger.info(
+                    f"Best model saved at epoch {epoch+1} with val loss {avg_val_loss:.4f}"
+                )
         else:
             no_improvement_epochs += 1
 
@@ -229,8 +230,8 @@ def finetune_model_with_gridsearch_cv(
     tokenizer,
     device,
     k_folds=3,
-    num_epochs=10,
-    batch_size=8,
+    num_epochs=3,
+    batch_size=32,
     n_process=1,
     seed=42,
     grad_accum_steps=1,
@@ -269,12 +270,12 @@ def finetune_model_with_gridsearch_cv(
     logger = setup_logger()
     np.random.seed(seed)
     torch.manual_seed(seed)
-    if device.type == "cuda":
+    if device == "cuda":
         torch.cuda.manual_seed_all(seed)
 
     # Define a grid of hyperparameters we want to search
     param_grid = {
-        "learning_rate": [5e-5, 1e-4, 3e-4],
+        "learning_rate": [5e-6, 1e-6],
         "weight_decay": [0.0, 1e-2],
         "label_smoothing": [0.0, 0.1],
     }
@@ -320,8 +321,7 @@ def finetune_model_with_gridsearch_cv(
             )
 
             # Build a fresh model
-            model_params = copy.deepcopy(base_params_model)
-            model = model_class(**model_params)
+            model = model_class(**base_params_model)
 
             # Extract hyperparams from combo
             learning_rate = combo["learning_rate"]
@@ -356,6 +356,7 @@ def finetune_model_with_gridsearch_cv(
                 loss_fn=loss_fn,
                 model_name="Transformer",
                 device=device,
+                save_weights=False,
                 grad_accum_steps=grad_accum_steps,
                 use_amp=use_amp,
                 early_stopping_patience=early_stopping_patience,

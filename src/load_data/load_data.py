@@ -35,7 +35,7 @@ def load_data(reload_data, n_process, batch_size, filename):
             news_data, col="Summary", lower_percent=10, upper_percent=90
         )
 
-        news_data = news_data.sample(n=1000, random_state=42)  # Remove
+        news_data = news_data.sample(n=500, random_state=42)  # To make training faster
 
         news_data.loc[:, "Content"] = preprocess_articles(
             news_data["Content"].tolist(), n_process=n_process, batch_size=batch_size

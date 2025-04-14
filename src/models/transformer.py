@@ -2,10 +2,6 @@ import torch
 import torch.nn.functional as F
 from torch import nn
 
-from src.set_up_config_device import set_up_device
-
-device = set_up_device()
-
 
 class AttentionLayer(nn.Module):
     """Multi-head attention layer."""
@@ -38,7 +34,7 @@ class AttentionLayer(nn.Module):
 
         if mask is not None:
             # mask shape must be broadcastable to (batch_size, n_head, seq_len, seq_len)
-            scores = scores.masked_fill(mask == 0, float("-inf"))
+            scores = scores.masked_fill(mask == 0, -1e4)
 
         attn = F.softmax(scores, dim=-1)
         out = attn @ v
@@ -57,11 +53,11 @@ class EncoderLayer(nn.Module):
     def __init__(self, hidden_size, ffn_hidden, n_head, drop_prob):
         super(EncoderLayer, self).__init__()
         # Pre-norm
-        self.norm1 = nn.LayerNorm(hidden_size)
+        self.norm1 = nn.LayerNorm(hidden_size, eps=1e-5)
         self.attention = AttentionLayer(hidden_size=hidden_size, n_head=n_head)
         self.dropout1 = nn.Dropout(p=drop_prob)
 
-        self.norm2 = nn.LayerNorm(hidden_size)
+        self.norm2 = nn.LayerNorm(hidden_size, eps=1e-5)
         self.linear1 = nn.Linear(hidden_size, ffn_hidden)
         self.linear2 = nn.Linear(ffn_hidden, hidden_size)
         self.dropout2 = nn.Dropout(p=drop_prob)
@@ -90,15 +86,15 @@ class DecoderLayer(nn.Module):
     def __init__(self, hidden_size, ffn_hidden, n_head, drop_prob):
         super(DecoderLayer, self).__init__()
         # Pre-norm
-        self.norm1 = nn.LayerNorm(hidden_size)
+        self.norm1 = nn.LayerNorm(hidden_size, eps=1e-5)
         self.self_attention = AttentionLayer(hidden_size=hidden_size, n_head=n_head)
         self.dropout1 = nn.Dropout(p=drop_prob)
 
-        self.norm2 = nn.LayerNorm(hidden_size)
+        self.norm2 = nn.LayerNorm(hidden_size, eps=1e-5)
         self.enc_dec_attention = AttentionLayer(hidden_size=hidden_size, n_head=n_head)
         self.dropout2 = nn.Dropout(p=drop_prob)
 
-        self.norm3 = nn.LayerNorm(hidden_size)
+        self.norm3 = nn.LayerNorm(hidden_size, eps=1e-5)
         self.linear1 = nn.Linear(hidden_size, ffn_hidden)
         self.linear2 = nn.Linear(ffn_hidden, hidden_size)
         self.dropout3 = nn.Dropout(p=drop_prob)
@@ -128,29 +124,28 @@ class DecoderLayer(nn.Module):
 
 
 class PositionalEncoding(nn.Module):
-    """Sinusoidal positional encoding module (unchanged)."""
+    """Sinusoidal positional encoding module"""
 
     def __init__(self, hidden_size, max_len):
         super(PositionalEncoding, self).__init__()
-        self.encoding = torch.zeros(max_len, hidden_size, device=device)
-        self.encoding.requires_grad = False
-        pos = torch.arange(0, max_len, device=device).float().unsqueeze(dim=1)
-        _2i = torch.arange(0, hidden_size, step=2, device=device).float()
-        self.encoding[:, 0::2] = torch.sin(pos / (10000 ** (_2i / hidden_size)))
-        self.encoding[:, 1::2] = torch.cos(pos / (10000 ** (_2i / hidden_size)))
+        encoding = torch.zeros(max_len, hidden_size)
+        pos = torch.arange(0, max_len).float().unsqueeze(1)
+        _2i = torch.arange(0, hidden_size, step=2).float()
+        encoding[:, 0::2] = torch.sin(pos / (10000 ** (_2i / hidden_size)))
+        encoding[:, 1::2] = torch.cos(pos / (10000 ** (_2i / hidden_size)))
+        self.encoding = encoding.unsqueeze(0)
 
     def forward(self, x):
-        # x shape = (batch_size, seq_len)
         batch_size, seq_len = x.size()
-        return self.encoding[:seq_len, :]
+        return self.encoding[:, :seq_len, :].to(x.device)
 
 
 class TransformerEmbedding(nn.Module):
     """Embedding layer with positional encoding."""
 
-    def __init__(self, vocab_size, hidden_size, max_len, drop_prob):
+    def __init__(self, vocab_size, hidden_size, max_len, drop_prob, pad_idx):
         super(TransformerEmbedding, self).__init__()
-        self.tok_emb = nn.Embedding(vocab_size, hidden_size, padding_idx=1)
+        self.tok_emb = nn.Embedding(vocab_size, hidden_size, padding_idx=pad_idx)
         self.pos_emb = PositionalEncoding(hidden_size, max_len)
         self.drop_out = nn.Dropout(p=drop_prob)
 
@@ -184,12 +179,14 @@ class Transformer(nn.Module):
             max_len=max_len,
             vocab_size=voc_size,
             drop_prob=drop_prob,
+            pad_idx=pad_idx,
         )
         self.dec_embedding = TransformerEmbedding(
             hidden_size=hidden_size,
             max_len=dec_max_len,
             vocab_size=voc_size,
             drop_prob=drop_prob,
+            pad_idx=pad_idx,
         )
 
         # ----- Encoder & Decoder Stacks -----
