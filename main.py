@@ -82,7 +82,7 @@ if __name__ == "__main__":
     n_process = set_up_config_device(cpu_count)
 
     ### LOAD DATA ###
-    print("loading data")
+    logger.info("Loading data")
     news_data = load_data(
         reload_data=reload_data,
         n_process=n_process,
@@ -98,7 +98,7 @@ if __name__ == "__main__":
     plot_text_length_distribution(data=news_data, column_name="Summary")
 
     ### TOKENIZATION AND DATA SPLIT ###
-    print("tokenization and data split")
+    logger.info("Tokenization and data split")
     train_data, temp_data = train_test_split(
         news_data, test_size=TEST_RATIO, random_state=42, shuffle=True
     )
@@ -110,8 +110,12 @@ if __name__ == "__main__":
     logger.info(f"Validation size dataset length: {len(val_data)}")
     logger.info(f"Test size dataset length: {len(test_data)}")
 
+    output_dir = "output/model_weights/"
+    if not os.path.exists(output_dir):
+        os.mkdir(output_dir)
+    
     if retrain_model:
-        print("retraining model")
+        logger.info("Retraining model")
         ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
         files = {
             "tokenized_articles_train": (train_data, "Content"),
@@ -234,7 +238,7 @@ if __name__ == "__main__":
 
     tokenized_articles_test = torch.load("output/token/tokenized_articles_test.pt")
 
-    print("starting prediction")
+    logger.info("Starting prediction")
     predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,
         batch_size=BATCH_SIZE,
@@ -242,5 +246,5 @@ if __name__ == "__main__":
         limit=None,
     )
     
-    print("starting evaluation")
+    logger.info("Starting evaluation")
     evaluate_model(data=test_data, predictions=predictions_transformer)
