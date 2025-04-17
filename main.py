@@ -63,7 +63,7 @@ if __name__ == "__main__":
     ### ARGUMENT PARSING ###
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--reload_data", default=False, type=bool, help="Reload data from scracth"
+        "--reload_data", default=False, type=bool, help="Reload data from scratch"
     )
     parser.add_argument(
         "--retrain_model",
@@ -82,6 +82,7 @@ if __name__ == "__main__":
     n_process = set_up_config_device(cpu_count)
 
     ### LOAD DATA ###
+    print("loading data")
     news_data = load_data(
         reload_data=reload_data,
         n_process=n_process,
@@ -97,6 +98,7 @@ if __name__ == "__main__":
     plot_text_length_distribution(data=news_data, column_name="Summary")
 
     ### TOKENIZATION AND DATA SPLIT ###
+    print("tokenization and data split")
     train_data, temp_data = train_test_split(
         news_data, test_size=TEST_RATIO, random_state=42, shuffle=True
     )
@@ -109,6 +111,7 @@ if __name__ == "__main__":
     logger.info(f"Test size dataset length: {len(test_data)}")
 
     if retrain_model:
+        print("retraining model")
         ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
         files = {
             "tokenized_articles_train": (train_data, "Content"),
@@ -231,11 +234,13 @@ if __name__ == "__main__":
 
     tokenized_articles_test = torch.load("output/token/tokenized_articles_test.pt")
 
+    print("starting prediction")
     predictions_transformer = generate_summaries_transformer(
         model=modelTransformer,
         batch_size=BATCH_SIZE,
         tokenized_input=tokenized_articles_test,
         limit=None,
     )
-
+    
+    print("starting evaluation")
     evaluate_model(data=test_data, predictions=predictions_transformer)
