@@ -12,5 +12,5 @@ source summary_generation/bin/activate
 # Install project dependencies
 pip install -r requirements.txt
 
-# Install model
+# Install spacy model
 python -m spacy download en_core_web_sm

@@ -23,7 +23,7 @@ from src.features.functions_preprocessing import (
     plot_text_length_distribution,
 )
 from src.features.tokenization import tokenize_and_save_bart
-from src.load_data.load_data import load_data
+from src.load_data.load_data import load_data, download_model_weights
 from src.models.train_models import (
     finetune_model_with_gridsearch_cv,
     train_model,
@@ -43,6 +43,8 @@ tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
 ### GLOBAL VARIABLES ###
 
 DATA_FILENAME = "news_data_cleaned.parquet"
+WEIGHTS_OUTPUT_DIR = "output/model_weights/"
+
 BATCH_SIZE = 32
 TEST_RATIO = 0.2
 VAL_RATIO = 0.5
@@ -106,14 +108,13 @@ if __name__ == "__main__":
         temp_data, test_size=VAL_RATIO, random_state=42
     )
 
-    logger.info(f"Train size dataset length: {len(train_data)}")
-    logger.info(f"Validation size dataset length: {len(val_data)}")
-    logger.info(f"Test size dataset length: {len(test_data)}")
+    logger.info("Train size dataset length: %d", len(train_data))
+    logger.info("Validation size dataset length: %d", len(val_data))
+    logger.info("Test size dataset length: %d", len(test_data))
 
-    output_dir = "output/model_weights/"
-    if not os.path.exists(output_dir):
-        os.mkdir(output_dir)
-    
+    if not os.path.exists(WEIGHTS_OUTPUT_DIR):
+        os.mkdir(WEIGHTS_OUTPUT_DIR)
+
     if retrain_model:
         logger.info("Retraining model")
         ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
@@ -219,6 +220,8 @@ if __name__ == "__main__":
         }
 
         train_model(**params_training)
+    else:
+        download_model_weights(WEIGHTS_OUTPUT_DIR)
 
     ### LOAD TRAINED MODEL ###
     modelTransformer = Transformer(**PARAMS_MODEL)
@@ -245,6 +248,6 @@ if __name__ == "__main__":
         tokenized_input=tokenized_articles_test,
         limit=None,
     )
-    
+
     logger.info("Starting evaluation")
     evaluate_model(data=test_data, predictions=predictions_transformer)

@@ -68,3 +68,37 @@ def load_data(reload_data, n_process, batch_size, filename):
                 raise e
     logger.info(f"Preprocessed articles and summaries have been loaded from {filename}")
     return news_data
+
+def download_model_weights(output_dir):
+    """
+    Downloads a the models weights and saves them to the specified output directory.
+
+    Parameters:
+    - output_dir : The path to the directory where the downloaded files will be saved.
+        The directory will be created if it does not already exist.
+    """
+    urls = [
+        f"https://minio.lab.sspcloud.fr/gamer35/public/transformer_article_weights/transformer_weights_{i+1}_epochs.pth" for i in range(3)
+    ]
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    for url in urls:
+        filename = os.path.basename(url)
+        dest_path = os.path.join(output_dir, filename)
+
+        # Only downloads if the weight file is not already in the folder
+        if os.path.exists(dest_path):
+            print(f"Skipping {filename} (already exists)")
+            continue
+            
+        print(f"Downloading {filename}...")
+        response = requests.get(url, stream=True)
+        response.raise_for_status()  # Raise error if the download fails
+
+        with open(dest_path, "wb") as f:
+            for chunk in response.iter_content(chunk_size=8192):
+                if chunk:
+                    f.write(chunk)
+
+        print(f"Saved to {dest_path}")
