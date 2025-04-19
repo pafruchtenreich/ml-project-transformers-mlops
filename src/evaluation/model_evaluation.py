@@ -25,3 +25,5 @@ def evaluate_model(data, predictions):
     reference_summaries = list(data["Summary"])
     results = rouge.compute(predictions=predictions, references=reference_summaries)
     logger.info(f"ROUGE metrics: {results}")
+
+    return results

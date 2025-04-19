@@ -29,10 +29,11 @@ from src.load_data.load_data import download_model_weights, load_data
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.training.create_scheduler import create_scheduler
-from src.training.train_models import (
+from src.training.train_models_mlFlow import (
     finetune_model_with_gridsearch_cv,
     train_model,
 )
+
 
 # Utils and setup
 from src.utils.set_up_config_device import (
@@ -41,6 +42,10 @@ from src.utils.set_up_config_device import (
     set_up_device,
 )
 from src.utils.setup_logger import setup_logger
+
+#MlFlow
+import mlflow
+import pandas as pd
 
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
 
@@ -78,6 +83,10 @@ if __name__ == "__main__":
         type=bool,
         help="Retrain model from default pretrained",
     )
+    
+    parser.add_argument(
+    "--experiment_name", type=str, default="transformer_news_summarization", help="MLflow experiment name"
+)
     args = parser.parse_args()
     reload_data = args.reload_data
     retrain_model = args.retrain_model
@@ -96,6 +105,12 @@ if __name__ == "__main__":
         batch_size=BATCH_SIZE,
         filename=DATA_FILENAME,
     )
+
+    ### SETUP MLFLOW ###
+    mlflow_server = os.getenv("MLFLOW_TRACKING_URI")
+    mlflow.set_tracking_uri(mlflow_server)
+    mlflow.set_experiment(args.experiment_name)
+    logger.info(f"Logging experiment to MLflow server: {mlflow_server}")
 
     ### DESCRIPTIVE STATISTICS ###
     descriptive_statistics(data=news_data, column_name="Content")
@@ -121,110 +136,118 @@ if __name__ == "__main__":
         os.mkdir(WEIGHTS_OUTPUT_DIR)
 
     if retrain_model:
-        logger.info("Retraining model")
-        ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
-        files = {
-            "tokenized_articles_train": (train_data, "Content"),
-            "tokenized_summaries_train": (train_data, "Summary"),
-            "tokenized_articles_val": (val_data, "Content"),
-            "tokenized_summaries_val": (val_data, "Summary"),
-        }
-
-        for filename, (df, column) in files.items():
-            path = os.path.join("output", "token", f"{filename}.pt")
-            if not os.path.exists(path):
-                tokenize_and_save_bart(
-                    data=df,
-                    column=column,
-                    n_process=n_process,
-                    filename=filename,
+        with mlflow.start_run(run_name="train_final_model"):
+            logger.info("Retraining model")
+            ### TOKENIZE AND SAVE TRAIN/VAL DATA ###
+            files = {
+                "tokenized_articles_train": (train_data, "Content"),
+                "tokenized_summaries_train": (train_data, "Summary"),
+                "tokenized_articles_val": (val_data, "Content"),
+                "tokenized_summaries_val": (val_data, "Summary"),
+            }
+    
+            for filename, (df, column) in files.items():
+                path = os.path.join("output", "token", f"{filename}.pt")
+                if not os.path.exists(path):
+                    tokenize_and_save_bart(
+                        data=df,
+                        column=column,
+                        n_process=n_process,
+                        filename=filename,
+                    )
+    
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                tokenized_articles_train = torch.load(
+                    "output/token/tokenized_articles_train.pt"
                 )
-
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            tokenized_articles_train = torch.load(
-                "output/token/tokenized_articles_train.pt"
+                tokenized_summaries_train = torch.load(
+                    "output/token/tokenized_summaries_train.pt"
+                )
+                tokenized_articles_val = torch.load(
+                    "output/token/tokenized_articles_val.pt"
+                )
+                tokenized_summaries_val = torch.load(
+                    "output/token/tokenized_summaries_val.pt"
+                )
+    
+            ### TRAINING ###
+            BEST_PARAMS = finetune_model_with_gridsearch_cv(
+                Transformer,
+                PARAMS_MODEL,
+                tokenized_articles_train,
+                tokenized_summaries_train,
+                tokenizer,
+                device,
+                k_folds=3,
+                num_epochs=3,
+                batch_size=32,
+                n_process=n_process,
+                seed=42,
+                grad_accum_steps=1,
+                use_amp=True,
+                early_stopping_patience=None,
             )
-            tokenized_summaries_train = torch.load(
-                "output/token/tokenized_summaries_train.pt"
+    
+            modelTransformer = Transformer(**PARAMS_MODEL)
+    
+            dataloader_train = create_dataloader(
+                tokenized_articles=tokenized_articles_train,
+                tokenized_summaries=tokenized_summaries_train,
+                batch_size=BATCH_SIZE,
+                n_process=n_process,
+                pad_value=tokenizer.pad_token_id,
             )
-            tokenized_articles_val = torch.load(
-                "output/token/tokenized_articles_val.pt"
+    
+            dataloader_val = create_dataloader(
+                tokenized_articles=tokenized_articles_val,
+                tokenized_summaries=tokenized_summaries_val,
+                batch_size=BATCH_SIZE,
+                n_process=n_process,
+                pad_value=tokenizer.pad_token_id,
             )
-            tokenized_summaries_val = torch.load(
-                "output/token/tokenized_summaries_val.pt"
+    
+            optimizer = torch.optim.AdamW(
+                modelTransformer.parameters(),
+                lr=BEST_PARAMS["learning_rate"],
+                betas=(0.9, 0.98),
+                eps=1e-9,
+                weight_decay=BEST_PARAMS["weight_decay"],
             )
+    
+            scheduler = create_scheduler(
+                dataloader=dataloader_train,
+                optimizer=optimizer,
+                n_epochs=N_EPOCHS,
+            )
+    
+            params_training = {
+                "model": modelTransformer,
+                "train_dataloader": dataloader_train,
+                "val_dataloader": dataloader_val,
+                "num_epochs": N_EPOCHS,
+                "optimizer": optimizer,
+                "scheduler": scheduler,
+                "loss_fn": nn.CrossEntropyLoss(
+                    ignore_index=tokenizer.pad_token_id,
+                    label_smoothing=BEST_PARAMS["label_smoothing"],
+                ),
+                "model_name": "Transformer",
+                "device": device,
+                "save_weights": True,
+                "grad_accum_steps": 1,
+                "use_amp": True,
+                "early_stopping_patience": None,
+            }
+    
+            train_model(**params_training)
+            
+            # Log final model
+            mlflow.pytorch.log_model(modelTransformer, "final_transformer_model")
 
-        ### TRAINING ###
-        BEST_PARAMS = finetune_model_with_gridsearch_cv(
-            Transformer,
-            PARAMS_MODEL,
-            tokenized_articles_train,
-            tokenized_summaries_train,
-            tokenizer,
-            device,
-            k_folds=3,
-            num_epochs=3,
-            batch_size=32,
-            n_process=n_process,
-            seed=42,
-            grad_accum_steps=1,
-            use_amp=True,
-            early_stopping_patience=None,
-        )
-
-        modelTransformer = Transformer(**PARAMS_MODEL)
-
-        dataloader_train = create_dataloader(
-            tokenized_articles=tokenized_articles_train,
-            tokenized_summaries=tokenized_summaries_train,
-            batch_size=BATCH_SIZE,
-            n_process=n_process,
-            pad_value=tokenizer.pad_token_id,
-        )
-
-        dataloader_val = create_dataloader(
-            tokenized_articles=tokenized_articles_val,
-            tokenized_summaries=tokenized_summaries_val,
-            batch_size=BATCH_SIZE,
-            n_process=n_process,
-            pad_value=tokenizer.pad_token_id,
-        )
-
-        optimizer = torch.optim.AdamW(
-            modelTransformer.parameters(),
-            lr=BEST_PARAMS["learning_rate"],
-            betas=(0.9, 0.98),
-            eps=1e-9,
-            weight_decay=BEST_PARAMS["weight_decay"],
-        )
-
-        scheduler = create_scheduler(
-            dataloader=dataloader_train,
-            optimizer=optimizer,
-            n_epochs=N_EPOCHS,
-        )
-
-        params_training = {
-            "model": modelTransformer,
-            "train_dataloader": dataloader_train,
-            "val_dataloader": dataloader_val,
-            "num_epochs": N_EPOCHS,
-            "optimizer": optimizer,
-            "scheduler": scheduler,
-            "loss_fn": nn.CrossEntropyLoss(
-                ignore_index=tokenizer.pad_token_id,
-                label_smoothing=BEST_PARAMS["label_smoothing"],
-            ),
-            "model_name": "Transformer",
-            "device": device,
-            "save_weights": True,
-            "grad_accum_steps": 1,
-            "use_amp": True,
-            "early_stopping_patience": None,
-        }
-
-        train_model(**params_training)
+            # Log final training parameters
+            mlflow.log_params(PARAMS_MODEL)
+            mlflow.log_params(BEST_PARAMS)
     else:
         download_model_weights(WEIGHTS_OUTPUT_DIR)
 
@@ -255,4 +278,12 @@ if __name__ == "__main__":
     )
 
     logger.info("Starting evaluation")
-    evaluate_model(data=test_data, predictions=predictions_transformer)
+    metrics = evaluate_model(data=test_data, predictions=predictions_transformer)
+
+    # Log evaluation metrics
+    for metric, value in metrics.items():
+        mlflow.log_metric(metric, value)
+
+
+
+
