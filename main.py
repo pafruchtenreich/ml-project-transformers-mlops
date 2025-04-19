@@ -1,9 +1,3 @@
-### MAIN SCRIPT ###
-
-# pip install -r requirements.txt
-# python -m spacy download en_core_web_sm
-
-
 ### IMPORTS ###
 
 import argparse
@@ -23,7 +17,7 @@ from src.features.functions_preprocessing import (
     plot_text_length_distribution,
 )
 from src.features.tokenization import tokenize_and_save_bart
-from src.load_data.load_data import load_data, download_model_weights
+from src.load_data.load_data import download_model_weights, load_data
 from src.models.train_models import (
     finetune_model_with_gridsearch_cv,
     train_model,

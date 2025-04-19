@@ -2,12 +2,12 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-import spacy
+from spacy_utils import load_spacy_model
 
 from src.setup_logger import setup_logger
 
 # Load spaCy English model
-nlp = spacy.load("en_core_web_sm", disable=["parser", "ner"])
+nlp = load_spacy_model()
 
 
 def descriptive_statistics(data, column_name):
