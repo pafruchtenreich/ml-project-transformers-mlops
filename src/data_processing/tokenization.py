@@ -35,6 +35,10 @@ def parallel_tokenize_bart(
     chunk_size=2000,
     max_length=512,
 ):
+
+    if not texts:
+        return torch.empty((0, max_length), dtype=torch.long)
+        
     # Split data into chunks
     chunks = [texts[i : i + chunk_size] for i in range(0, len(texts), chunk_size)]
 
