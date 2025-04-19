@@ -60,6 +60,7 @@ flowchart TD
     subgraph "Utilities"
         L["set_up_config_device.py"]:::utility
         M["setup_logger.py"]:::utility
+        X["spacy_utils.py"]:::utility
     end
 
     subgraph "Layer 2: Data Ingestion & Loading"
@@ -67,30 +68,34 @@ flowchart TD
         C["load_dataset_kaggle.py"]:::data
     end
 
-    subgraph "Layer 3: Data Preprocessing & Feature Engineering"
+    subgraph "Layer 3: Data Preprocessing & Tokenization"
         D["functions_preprocessing.py"]:::data
         E["tokenization.py"]:::data
     end
 
-    subgraph "Layer 4: Data Preparation Utilities"
+    subgraph "Layer 4: Descriptive Analysis"
+        Y["descriptive_statistics.py"]:::data
+    end
+
+    subgraph "Layer 5: Data Preparation Utilities"
         F["create_dataloader.py"]:::data
         G["create_scheduler.py"]:::data
     end
 
-    subgraph "Layer 5: Model Building & Training"
+    subgraph "Layer 6: Model Building & Training"
         H["transformer.py"]:::model
         I["train_models.py"]:::model
     end
 
-    subgraph "Layer 6: Evaluation"
+    subgraph "Layer 7: Evaluation"
         J["model_evaluation.py"]:::evaluation
     end
 
-    subgraph "Layer 7: Prediction/Inference"
+    subgraph "Layer 8: Prediction/Inference"
         K["generate_summaries_transformer.py"]:::prediction
     end
 
-    subgraph "Layer 8: Output Storage"
+    subgraph "Layer 9: Output Storage"
         N["Output: model_predictions"]:::output
     end
 
@@ -99,6 +104,7 @@ flowchart TD
     A -->|"triggers"| C
     A -->|"configures"| L
     A -->|"configures"| M
+    A -->|"configures"| X
     B -->|"feeds data"| D
     C -->|"feeds data"| E
     D -->|"prepares"| F
@@ -110,22 +116,7 @@ flowchart TD
     J -->|"evaluates"| K
     K -->|"outputs"| N
     J -.->|"feedback"| I
-
-    %% Click Events
-    click A "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/main.py"
-    click B "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/load_data/load_data.py"
-    click C "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/load_data/load_dataset_kaggle.py"
-    click D "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/features/functions_preprocessing.py"
-    click E "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/features/tokenization.py"
-    click F "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/create_dataloader.py"
-    click G "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/create_scheduler.py"
-    click H "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/models/transformer.py"
-    click I "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/models/train_models.py"
-    click J "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/evaluation/model_evaluation.py"
-    click K "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/prediction/generate_summaries_transformer.py"
-    click L "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/set_up_config_device.py"
-    click M "https://github.com/pafruchtenreich/ml-project-transformers-mlops/blob/master/src/setup_logger.py"
-    click N "https://github.com/pafruchtenreich/ml-project-transformers-mlops/tree/master/output/model_predictions"
+    D -->|"generates"| Y
 
     %% Styles
     classDef main fill:#d3d3d3,stroke:#333,stroke-width:2px;
