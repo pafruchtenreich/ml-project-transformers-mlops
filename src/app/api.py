@@ -3,8 +3,11 @@ from pathlib import Path
 
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.templating import Jinja2Templates
+
+# Third-party libraries
 from transformers import BartTokenizer
 
+# Internal modules
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 

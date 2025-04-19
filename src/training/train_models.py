@@ -1,5 +1,7 @@
+# Standard library
 import time
 
+# Third-party libraries
 import numpy as np
 import torch
 from sklearn.model_selection import KFold, ParameterGrid
@@ -7,6 +9,8 @@ from tqdm import tqdm
 
 from src.data_processing.create_dataloader import create_dataloader
 from src.training.create_scheduler import create_scheduler
+
+# Internal modules
 from src.utils.setup_logger import setup_logger
 
 

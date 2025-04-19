@@ -1,7 +1,10 @@
+# Standard library
 import os
 
+# Third-party libraries
 import torch
 
+# Internal modules
 from src.utils.setup_logger import setup_logger
 
 

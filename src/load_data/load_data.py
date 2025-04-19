@@ -1,5 +1,7 @@
+# Standard library
 import os.path
 
+# Third-party libraries
 import pandas as pd
 import requests
 
@@ -9,6 +11,8 @@ from src.data_processing.functions_preprocessing import (
     remove_outlier,
 )
 from src.load_data.load_dataset_kaggle import load_dataset_kaggle
+
+# Internal modules
 from src.utils.setup_logger import setup_logger
 
 
@@ -79,6 +83,7 @@ def download_model_weights(output_dir):
     - output_dir : The path to the directory where the downloaded files will be saved.
         The directory will be created if it does not already exist.
     """
+    logger = setup_logger()
     urls = [
         f"https://minio.lab.sspcloud.fr/gamer35/public/transformer_weights_{i+1}_epochs.pth"
         for i in range(3)
@@ -92,10 +97,10 @@ def download_model_weights(output_dir):
 
         # Only downloads if the weight file is not already in the folder
         if os.path.exists(dest_path):
-            print(f"Skipping {filename} (already exists)")
+            logger.info(f"Skipping {filename} (already exists)")
             continue
 
-        print(f"Downloading {filename}...")
+        logger.info(f"Downloading {filename}...")
         response = requests.get(url, stream=True)
         response.raise_for_status()  # Raise error if the download fails
 
@@ -104,4 +109,4 @@ def download_model_weights(output_dir):
                 if chunk:
                     f.write(chunk)
 
-        print(f"Saved to {dest_path}")
+        logger.info(f"Saved to {dest_path}")
