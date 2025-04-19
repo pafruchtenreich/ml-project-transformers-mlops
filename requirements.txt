@@ -17,3 +17,6 @@ scikit-learn
 matplotlib
 fastAPI
 uvicorn
+pytest 
+
+
