@@ -80,7 +80,7 @@ def download_model_weights(output_dir):
         The directory will be created if it does not already exist.
     """
     urls = [
-        f"https://minio.lab.sspcloud.fr/gamer35/public/transformer_article_weights/transformer_weights_{i+1}_epochs.pth"
+        f"https://minio.lab.sspcloud.fr/gamer35/public/transformer_weights_{i+1}_epochs.pth"
         for i in range(3)
     ]
 
