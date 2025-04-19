@@ -2,8 +2,8 @@ import os
 
 import matplotlib.pyplot as plt
 import numpy as np
-from spacy_utils import load_spacy_model
 
+from src.features.spacy_utils import load_spacy_model
 from src.setup_logger import setup_logger
 
 # Load spaCy English model
