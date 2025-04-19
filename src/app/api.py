@@ -1,12 +1,17 @@
 # import torch
-from fastapi import FastAPI, HTTPException
+from pathlib import Path
+
+from fastapi import FastAPI, Form, HTTPException, Request
+from fastapi.templating import Jinja2Templates
 from transformers import BartTokenizer
 
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 
 # Initialize FastAPI app
-app = FastAPI(title="Génération de résumé d'articles")
+app = FastAPI(title="Article summary generation")
+BASE_DIR = Path(__file__).resolve().parent
+templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
 # Initialize tokenizer and model
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
@@ -30,20 +35,24 @@ modelTransformer.eval()
 
 
 @app.get("/", tags=["Welcome"])
-def show_welcome_page():
+def show_welcome_page(request: Request):
     """
     Show welcome page with model name and version.
     """
 
-    return {
-        "Message": "API for articles' summary generation",
-        "Model_name": "TO DO",
-        "Model_version": "TO DO",
-    }
+    return templates.TemplateResponse(
+        "index.html",
+        {
+            "request": request,
+            "Message": "API for article summary generation",
+            "Model_name": "TO DO",
+            "Model_version": "TO DO",
+        },
+    )
 
 
-@app.get("/summarize/", tags=["Summarize"])
-async def summarize_article(article: str):
+@app.post("/summarize/", tags=["Summarize"])
+async def summarize_article(request: Request, article: str = Form(...)):
     """
     Endpoint to summarize an article.
     """
@@ -67,7 +76,9 @@ async def summarize_article(article: str):
         # Decode generated summary
         summary = tokenizer.decode(summary_ids[0], skip_special_tokens=True)
 
-        return {"summary": summary}
+        return templates.TemplateResponse(
+            "summarize.html", {"request": request, "summary": summary}
+        )
 
     except Exception as e:
         raise HTTPException(

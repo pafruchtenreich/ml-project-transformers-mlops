@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>API for aticle summary generation</title>
+</head>
+<body>
+    <h1>{{ Message }}</h1>
+    <p>Model: {{ Model_name }} | Version: {{ Model_version }}</p>
+
+    <form action="/summarize/" method="post">
+        <textarea name="article" rows="10" cols="80" placeholder="Paste your article here..."></textarea><br>
+        <button type="submit">Generate Summary</button>
+    </form>
+</body>
+</html>

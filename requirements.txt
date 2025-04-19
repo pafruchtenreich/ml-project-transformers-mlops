@@ -17,3 +17,5 @@ scikit-learn
 matplotlib
 fastAPI
 uvicorn
+jinja2
+python-multipart
