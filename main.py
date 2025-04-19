@@ -11,14 +11,13 @@ import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from transformers import BartTokenizer
 
-from src.data_processing.create_dataloader import create_dataloader
-
 # Feature engineering
-from src.data_processing.descriptive_statistics import (
+from src.descriptive_statistics.descriptive_statistics import (
     descriptive_statistics,
     plot_text_length_distribution,
 )
 from src.data_processing.tokenization import tokenize_and_save_bart
+from src.data_processing.create_dataloader import create_dataloader
 
 # Evaluation and prediction
 from src.evaluation.model_evaluation import evaluate_model
@@ -35,7 +34,6 @@ from src.training.train_models import (
     train_model,
 )
 
-## Internal modules
 # Utils and setup
 from src.utils.set_up_config_device import (
     get_allowed_cpu_count,
