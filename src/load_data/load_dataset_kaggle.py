@@ -1,6 +1,8 @@
+# Third-party libraries
 import kagglehub
 import pandas as pd
 
+# Internal modules
 from src.utils.setup_logger import setup_logger
 
 

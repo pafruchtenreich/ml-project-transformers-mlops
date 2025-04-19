@@ -1,7 +1,8 @@
-# import torch
+# Third-party libraries
 from fastapi import FastAPI, HTTPException
 from transformers import BartTokenizer
 
+# Internal modules
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 

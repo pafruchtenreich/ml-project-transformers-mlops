@@ -35,7 +35,7 @@ from src.training.train_models import (
     train_model,
 )
 
-# Internal modules
+## Internal modules
 # Utils and setup
 from src.utils.set_up_config_device import (
     get_allowed_cpu_count,

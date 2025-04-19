@@ -1,5 +1,7 @@
+# Third-party libraries
 import numpy as np
 
+# Internal modules
 from src.utils.spacy_utils import load_spacy_model
 
 # Load spaCy English model

@@ -1,5 +1,7 @@
+# Standard library
 import os.path
 
+# Third-party libraries
 import pandas as pd
 import requests
 
@@ -9,6 +11,8 @@ from src.data_processing.functions_preprocessing import (
     remove_outlier,
 )
 from src.load_data.load_dataset_kaggle import load_dataset_kaggle
+
+# Internal modules
 from src.utils.setup_logger import setup_logger
 
 
