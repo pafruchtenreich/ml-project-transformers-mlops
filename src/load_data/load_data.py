@@ -1,6 +1,7 @@
 import os.path
 
 import pandas as pd
+import requests
 
 from src.features.functions_preprocessing import (
     preprocess_articles,
@@ -69,6 +70,7 @@ def load_data(reload_data, n_process, batch_size, filename):
     logger.info(f"Preprocessed articles and summaries have been loaded from {filename}")
     return news_data
 
+
 def download_model_weights(output_dir):
     """
     Downloads a the models weights and saves them to the specified output directory.
@@ -78,7 +80,8 @@ def download_model_weights(output_dir):
         The directory will be created if it does not already exist.
     """
     urls = [
-        f"https://minio.lab.sspcloud.fr/gamer35/public/transformer_article_weights/transformer_weights_{i+1}_epochs.pth" for i in range(3)
+        f"https://minio.lab.sspcloud.fr/gamer35/public/transformer_article_weights/transformer_weights_{i+1}_epochs.pth"
+        for i in range(3)
     ]
 
     os.makedirs(output_dir, exist_ok=True)
@@ -91,7 +94,7 @@ def download_model_weights(output_dir):
         if os.path.exists(dest_path):
             print(f"Skipping {filename} (already exists)")
             continue
-            
+
         print(f"Downloading {filename}...")
         response = requests.get(url, stream=True)
         response.raise_for_status()  # Raise error if the download fails
