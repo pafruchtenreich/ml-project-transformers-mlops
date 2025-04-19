@@ -6,7 +6,7 @@ import pandas as pd
 import torch
 from transformers import BartTokenizer
 
-from src.setup_logger import setup_logger
+from src.utils.setup_logger import setup_logger
 
 
 def tokenize_chunk_bart(texts_chunk, tokenizer_name: str, max_length: int = 512):

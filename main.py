@@ -1,35 +1,48 @@
 ### IMPORTS ###
 
+# Standard library
 import argparse
 import os
 import warnings
 
+# Third-party libraries
 import torch
 import torch.nn as nn
 from sklearn.model_selection import train_test_split
 from transformers import BartTokenizer
 
-from src.create_dataloader import create_dataloader
-from src.create_scheduler import create_scheduler
-from src.evaluation.model_evaluation import evaluate_model
-from src.features.functions_preprocessing import (
+from src.data_processing.create_dataloader import create_dataloader
+
+# Feature engineering
+from src.data_processing.descriptive_statistics import (
     descriptive_statistics,
     plot_text_length_distribution,
 )
-from src.features.tokenization import tokenize_and_save_bart
+from src.data_processing.tokenization import tokenize_and_save_bart
+
+# Evaluation and prediction
+from src.evaluation.model_evaluation import evaluate_model
+
+# Data loading
 from src.load_data.load_data import download_model_weights, load_data
-from src.models.train_models import (
+
+# Modeling and training
+from src.models.transformer import Transformer
+from src.prediction.generate_summaries_transformer import generate_summaries_transformer
+from src.training.create_scheduler import create_scheduler
+from src.training.train_models import (
     finetune_model_with_gridsearch_cv,
     train_model,
 )
-from src.models.transformer import Transformer
-from src.prediction.generate_summaries_transformer import generate_summaries_transformer
-from src.set_up_config_device import (
+
+# Internal modules
+# Utils and setup
+from src.utils.set_up_config_device import (
     get_allowed_cpu_count,
     set_up_config_device,
     set_up_device,
 )
-from src.setup_logger import setup_logger
+from src.utils.setup_logger import setup_logger
 
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
 

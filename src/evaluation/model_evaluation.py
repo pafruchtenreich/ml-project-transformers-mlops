@@ -1,6 +1,6 @@
 import evaluate
 
-from src.setup_logger import setup_logger
+from src.utils.setup_logger import setup_logger
 
 
 def evaluate_model(data, predictions):

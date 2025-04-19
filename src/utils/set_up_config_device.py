@@ -2,7 +2,7 @@ import os
 
 import torch
 
-from src.setup_logger import setup_logger
+from src.utils.setup_logger import setup_logger
 
 
 def set_up_device():

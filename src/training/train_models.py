@@ -5,9 +5,9 @@ import torch
 from sklearn.model_selection import KFold, ParameterGrid
 from tqdm import tqdm
 
-from src.create_dataloader import create_dataloader
-from src.create_scheduler import create_scheduler
-from src.setup_logger import setup_logger
+from src.data_processing.create_dataloader import create_dataloader
+from src.training.create_scheduler import create_scheduler
+from src.utils.setup_logger import setup_logger
 
 
 def train_model(

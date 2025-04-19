@@ -3,13 +3,13 @@ import os.path
 import pandas as pd
 import requests
 
-from src.features.functions_preprocessing import (
+from src.data_processing.functions_preprocessing import (
     preprocess_articles,
     preprocess_summaries,
     remove_outlier,
 )
 from src.load_data.load_dataset_kaggle import load_dataset_kaggle
-from src.setup_logger import setup_logger
+from src.utils.setup_logger import setup_logger
 
 
 def load_data(reload_data, n_process, batch_size, filename):

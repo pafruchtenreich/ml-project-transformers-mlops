@@ -1,7 +1,7 @@
 import kagglehub
 import pandas as pd
 
-from src.setup_logger import setup_logger
+from src.utils.setup_logger import setup_logger
 
 
 def load_dataset_kaggle():
