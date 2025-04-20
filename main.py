@@ -29,7 +29,7 @@ from src.load_data.load_data import download_model_weights, load_data
 from src.models.transformer import Transformer
 from src.prediction.generate_summaries_transformer import generate_summaries_transformer
 from src.training.create_scheduler import create_scheduler
-from src.training.train_models_mlFlow import (
+from src.training.train_models import (
     finetune_model_with_gridsearch_cv,
     train_model,
 )
