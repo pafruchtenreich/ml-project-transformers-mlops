@@ -8,7 +8,7 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - news-summary.lab.sspcloud.fr  # <-- Replace 'titanic' with your actual subdomain if needed
+        - news-summary.lab.sspcloud.fr  
   rules:
     - host: news-summary.lab.sspcloud.fr
       http:
@@ -17,6 +17,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: news-summary  # <-- must match your Service name
+                name: news-summary  # <-- must match Service name
                 port:
                   number: 80
