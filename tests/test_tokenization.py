@@ -16,11 +16,6 @@ def test_tokenize_and_save_bart_basic(tmp_path):
     output_path = tmp_path / "token"
     os.makedirs(output_path, exist_ok=True)
 
-    # Monkeypatch output dir inside the function (optionally patch logger if needed)
-    import src.data_processing.tokenization as token_module
-    token_module.os.makedirs = lambda *args, **kwargs: None
-    token_module.output_dir = str(output_path)  # override internal variable (if needed)
-
     # Run function
     tokenize_and_save_bart(
         data=df,
@@ -70,4 +65,3 @@ def test_tokenize_and_save_bart_multi_process(tmp_path):
     saved_file = os.path.join("output/token", f"{filename}.pt")
     tokenized = torch.load(saved_file)
     assert tokenized.shape[0] == 100
-

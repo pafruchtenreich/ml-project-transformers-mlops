@@ -19,6 +19,9 @@ app = FastAPI(title="Article summary generation")
 BASE_DIR = Path(__file__).resolve().parent
 templates = Jinja2Templates(directory=str(BASE_DIR / "templates"))
 
+# # Device setup
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+
 # Initialize tokenizer and model
 tokenizer = BartTokenizer.from_pretrained("facebook/bart-large-cnn")
 
@@ -33,16 +36,16 @@ PARAMS_MODEL = {
     "voc_size": len(tokenizer),
 }
 
-modelTransformer = Transformer(**PARAMS_MODEL)
+modelTransformer = Transformer(**PARAMS_MODEL).to(device)
 download_model_weights("weights")
-modelTransformer.load_state_dict(torch.load("weights/transformer_weights_3_epochs.pth"))
+modelTransformer.load_state_dict(torch.load("weights/transformer_weights_3_epochs.pth", map_location=device))
 modelTransformer.eval()
 
 
 @app.get("/", tags=["Welcome"])
 def show_welcome_page(request: Request):
     """
-    Show welcome page with model name and version.
+    Shows welcome page with model name and version.
     """
 
     return templates.TemplateResponse(
