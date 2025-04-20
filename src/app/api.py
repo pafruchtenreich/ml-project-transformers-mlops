@@ -1,11 +1,14 @@
 # import torch
 from pathlib import Path
 
+import torch
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.templating import Jinja2Templates
 
 # Third-party libraries
 from transformers import BartTokenizer
+
+from src.load_data.load_data import download_model_weights
 
 # Internal modules
 from src.models.transformer import Transformer
@@ -31,9 +34,8 @@ PARAMS_MODEL = {
 }
 
 modelTransformer = Transformer(**PARAMS_MODEL)
-# modelTransformer.load_state_dict(
-# torch.load("output/model_weights/transformer_weights_3_epochs.pth")
-# )
+download_model_weights("weights")
+modelTransformer.load_state_dict(torch.load("weights/transformer_weights_3_epochs.pth"))
 modelTransformer.eval()
 
 
