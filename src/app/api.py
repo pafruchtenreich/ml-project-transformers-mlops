@@ -48,8 +48,8 @@ def show_welcome_page(request: Request):
         {
             "request": request,
             "Message": "API for article summary generation",
-            "Model_name": "TO DO",
-            "Model_version": "TO DO",
+            "Model_name": "summary_generator",
+            "Model_version": "v1.3",
         },
     )
 
