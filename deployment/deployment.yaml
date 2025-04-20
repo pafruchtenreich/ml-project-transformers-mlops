@@ -3,21 +3,21 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: transformer_summary
+  name: transformer-summary
   labels:
-    app: news_summary
+    app: news-summary
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: news_summary
+      app: news-summary
   template:
     metadata:
       labels:
-        app: news_summary
+        app: news-summary
     spec:
       containers:
-        - name: news_summary
+        - name: news-summary
           image: pafruchtenreich/app:latest  
           ports:
             - containerPort: 8000
