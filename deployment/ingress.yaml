@@ -17,6 +17,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: news-summary  # <-- must match Service name
+                name: transformer-summary  
                 port:
                   number: 80
