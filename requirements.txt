@@ -21,3 +21,4 @@ jinja2
 python-multipart
 pytest
 mlflow
+httpx
