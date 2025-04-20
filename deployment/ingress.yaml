@@ -1,0 +1,22 @@
+# filename: deployment/ingress.yaml
+
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: news_summary-ingress
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - news_summary.lab.sspcloud.fr  # <-- Replace 'titanic' with your actual subdomain if needed
+  rules:
+    - host: news_summary.lab.sspcloud.fr
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: news_summary  # <-- must match your Service name
+                port:
+                  number: 80
