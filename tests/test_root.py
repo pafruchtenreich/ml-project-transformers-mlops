@@ -9,7 +9,7 @@ client = TestClient(app)
 def test_root():
     response = client.get("/")
     assert response.status_code == 200
-    assert "PI for article summary generation" in response.text
+    assert "API for article summary generation" in response.text
 
 
 # Test pour vérifier la fonctionnalité de résumé de l'article
