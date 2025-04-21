@@ -40,12 +40,13 @@ This will load the trained model, load locally saved data, run inference and sav
 
 ## Results and Experiments
 
-The model was trained on an NVIDIA A100 GPU with 40 GB of high-bandwidth memory :computer:
+When fully trained, a very similar model yields the following performances :computer:
 
 | Model                        | ROUGE-1 | ROUGE-2 | ROUGE-L | Train Time (ep)  | Params  |
 |------------------------------|---------|---------|---------|------------------|---------|
 | Transformer                  | 0.20    | 0.04    | 0.15    | ~ $1.6 \times 10^4$ s (25) | $1.25 \times 10^7$  |
 
+The model was trained on an NVIDIA A100 GPU with 40 GB of high-bandwidth memory.
 
 ## Repository structure
 
