@@ -19,11 +19,13 @@ pip install -r requirements.txt
 
 2. **First run**:
 
-You'll need to download the data from scratch and you may want to retrain the model.
+You'll need to download the data from scratch and you may want to retrain the model (warning : it takes a lot a time)
 ```
 python main.py --reload_data True --retrain_model True
 ```
-You can as well choose to use the weights saved in the S3, you can use these to generate summaries without retraining.
+You can as well choose to use the weights saved in the S3, you can use these to generate summaries without retraining. 
+
+Disclaimer : the weights obtained are far from optimal, we haven't fully trained the model.
 ```
 python main.py --reload_data True
 ```
